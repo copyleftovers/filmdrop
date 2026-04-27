@@ -200,6 +200,7 @@ pub async fn get_image(
 }
 
 fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
+    let album_id_json = serde_json::to_string(album_id).unwrap_or_else(|_| "\"\"".to_string());
     format!(
         r#"<!DOCTYPE html>
 <html lang="en">
@@ -588,7 +589,7 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
     </div>
 
     <script>
-        const albumId = '{album_id}';
+        const albumId = {album_id_json};
         const images = {images_json};
         let currentImageIndex = 0;
 
@@ -888,12 +889,12 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
         const downloadAllBtn = document.querySelector('.download-all-btn');
         if (downloadAllBtn) {{
             downloadAllBtn.addEventListener('click', () => {{
-                const original = downloadAllBtn.textContent;
+                const original = downloadAllBtn.innerHTML;
                 downloadAllBtn.textContent = 'Preparing…';
                 downloadAllBtn.style.pointerEvents = 'none';
                 downloadAllBtn.style.opacity = '0.7';
                 setTimeout(() => {{
-                    downloadAllBtn.textContent = original;
+                    downloadAllBtn.innerHTML = original;
                     downloadAllBtn.style.pointerEvents = '';
                     downloadAllBtn.style.opacity = '';
                 }}, 8000);
@@ -904,6 +905,7 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
 </html>"#,
         album_name = html_escape(&manifest.name),
         album_id = album_id,
+        album_id_json = album_id_json,
         image_count = manifest.images.len(),
         thumbnails = generate_thumbnails_html(album_id, manifest),
         images_json = serde_json::to_string(&manifest.images).unwrap_or_else(|_| "[]".to_string()),
