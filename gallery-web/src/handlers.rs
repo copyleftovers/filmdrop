@@ -963,6 +963,22 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
                 zoomPanActive = false;
             }}
         }}, {{ passive: true }});
+
+        // Bulk download loading state
+        const downloadAllBtn = document.querySelector('.download-all-btn');
+        if (downloadAllBtn) {{
+            downloadAllBtn.addEventListener('click', () => {{
+                const original = downloadAllBtn.textContent;
+                downloadAllBtn.textContent = 'Preparing…';
+                downloadAllBtn.style.pointerEvents = 'none';
+                downloadAllBtn.style.opacity = '0.7';
+                setTimeout(() => {{
+                    downloadAllBtn.textContent = original;
+                    downloadAllBtn.style.pointerEvents = '';
+                    downloadAllBtn.style.opacity = '';
+                }}, 8000);
+            }});
+        }}
     </script>
 </body>
 </html>"#,
