@@ -5,6 +5,8 @@ use axum::{
     Json,
 };
 use gallery_core::AlbumManifest;
+use std::sync::Arc;
+use tokio::sync::Semaphore;
 
 use crate::state::AppState;
 
@@ -205,17 +207,23 @@ pub async fn download_album(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
+    let album_name = manifest.name.clone();
+
     // Download all originals in parallel
+    let semaphore = Arc::new(Semaphore::new(8));
     let mut join_set = tokio::task::JoinSet::new();
-    for image in manifest.images.clone() {
+    for image in manifest.images {
         let s3 = state.s3.clone();
         let key = format!("{album_id}/{}", image.original_path);
+        let semaphore = semaphore.clone();
         join_set.spawn(async move {
+            let _permit = semaphore.acquire_owned().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
             let data = s3.download_file(&key).await.map_err(|e| {
                 tracing::error!("Failed to download image {}: {:?}", key, e);
                 StatusCode::INTERNAL_SERVER_ERROR
             })?;
-            Ok::<(String, Vec<u8>), StatusCode>((image.original_filename, data))
+            let entry_name = format!("{}_{}", &image.id[..8], image.original_filename);
+            Ok::<(String, Vec<u8>), StatusCode>((entry_name, data))
         });
     }
 
@@ -257,13 +265,13 @@ pub async fn download_album(
     })?;
 
     // Build slug from album name
-    let slug: String = manifest
-        .name
+    let slug: String = album_name
         .to_lowercase()
         .replace(' ', "_")
         .chars()
         .filter(|c| c.is_alphanumeric() || *c == '_')
         .collect();
+    let slug = if slug.is_empty() { "album".to_string() } else { slug };
 
     let content_disposition = format!("attachment; filename=\"{slug}.zip\"");
 
