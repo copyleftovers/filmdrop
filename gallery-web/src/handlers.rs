@@ -390,6 +390,7 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
             width: auto;
             object-fit: contain;
             border-radius: 4px;
+            transition: opacity 0.3s ease;
         }}
 
         .bento-item img.loading {{
@@ -700,6 +701,7 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
         }});
 
         function openLightbox(index) {{
+            resetZoom();
             currentImageIndex = index;
             showImage(index);
             document.getElementById('lightbox').classList.add('active');
@@ -1011,7 +1013,7 @@ fn generate_thumbnails_html(album_id: &str, manifest: &AlbumManifest) -> String 
 
             format!(
                 r#"<div class="bento-item" style="aspect-ratio: {width}/{height}" onclick="openLightbox({index})">
-                <img data-index="{index}" src="{thumbnail_src}" alt="{filename}" loading="lazy" style="opacity:0;transition:opacity 0.3s ease" onload="this.style.opacity='1'">
+                <img data-index="{index}" src="{thumbnail_src}" alt="{filename}" loading="lazy" style="opacity:0" onload="this.style.opacity='1'">
                 <a class="thumb-download" href="{download_href}" download="{orig_filename}" onclick="event.stopPropagation()" title="Download original">&#x2B07;</a>
             </div>"#,
                 width = image.width,
