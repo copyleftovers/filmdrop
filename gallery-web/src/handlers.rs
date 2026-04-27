@@ -330,6 +330,7 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
             --radius-rect: 10px;
             --radius-pill: 999px;
             --ctrl-font: 0.85rem;
+            --ctrl-font-sm: 0.82rem;
             --ctrl-weight: 500;
             --ctrl-transition: background 0.15s ease, opacity 0.15s ease;
             --ctrl-min-h: 44px;
@@ -469,28 +470,6 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
 
         .thumb-download:active {{
             background: var(--ctrl-bg-active);
-        }}
-
-        .thumb-download {{
-            position: absolute;
-            bottom: 8px;
-            right: 8px;
-            width: 32px;
-            height: 32px;
-            background: rgba(0, 0, 0, 0.55);
-            color: white;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
-            text-decoration: none;
-            z-index: 2;
-            transition: background 0.15s ease;
-        }}
-
-        .thumb-download:hover {{
-            background: rgba(0, 0, 0, 0.8);
         }}
 
         /* Lightbox */
@@ -634,7 +613,7 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
         }}
 
         .pill-btn:hover {{
-            background: rgba(255, 255, 255, 0.10);
+            background: var(--ctrl-bg-active);
         }}
 
         .pill-btn:active {{
@@ -653,7 +632,7 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
         .pill-counter {{
             padding: 0 6px;
             color: var(--ctrl-color-dim);
-            font-size: 0.82rem;
+            font-size: var(--ctrl-font-sm);
             font-weight: var(--ctrl-weight);
             min-width: 56px;
             text-align: center;
