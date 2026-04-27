@@ -49,10 +49,7 @@ pub async fn index() -> Html<&'static str> {
 }
 
 /// Gallery page
-pub async fn gallery(
-    State(state): State<AppState>,
-    Path(album_id): Path<String>,
-) -> Html<String> {
+pub async fn gallery(State(state): State<AppState>, Path(album_id): Path<String>) -> Html<String> {
     tracing::info!("Gallery page request: album_id={}", album_id);
 
     // Verify album exists by checking manifest
@@ -82,9 +79,21 @@ pub async fn gallery(
         let preview_key = format!("{album_id}/{}", image.preview_path);
         let original_key = format!("{album_id}/{}", image.original_path);
 
-        image.thumbnail_url = state.s3.generate_presigned_url(&thumbnail_key, expires_in).await.ok();
-        image.preview_url = state.s3.generate_presigned_url(&preview_key, expires_in).await.ok();
-        image.original_url = state.s3.generate_presigned_url(&original_key, expires_in).await.ok();
+        image.thumbnail_url = state
+            .s3
+            .generate_presigned_url(&thumbnail_key, expires_in)
+            .await
+            .ok();
+        image.preview_url = state
+            .s3
+            .generate_presigned_url(&preview_key, expires_in)
+            .await
+            .ok();
+        image.original_url = state
+            .s3
+            .generate_presigned_url(&original_key, expires_in)
+            .await
+            .ok();
     }
 
     // Generate HTML
@@ -101,16 +110,13 @@ pub async fn get_manifest(
     tracing::info!("Manifest API request: album_id={}", album_id);
 
     let manifest_key = format!("{album_id}/manifest.json");
-    let manifest_data = state
-        .s3
-        .download_file(&manifest_key)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to fetch manifest for album {}: {:?}", album_id, e);
-            StatusCode::NOT_FOUND
-        })?;
+    let manifest_data = state.s3.download_file(&manifest_key).await.map_err(|e| {
+        tracing::error!("Failed to fetch manifest for album {}: {:?}", album_id, e);
+        StatusCode::NOT_FOUND
+    })?;
 
-    let manifest_json = String::from_utf8(manifest_data).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let manifest_json =
+        String::from_utf8(manifest_data).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let mut manifest: AlbumManifest =
         serde_json::from_str(&manifest_json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
@@ -121,9 +127,21 @@ pub async fn get_manifest(
         let preview_key = format!("{album_id}/{}", image.preview_path);
         let original_key = format!("{album_id}/{}", image.original_path);
 
-        image.thumbnail_url = state.s3.generate_presigned_url(&thumbnail_key, expires_in).await.ok();
-        image.preview_url = state.s3.generate_presigned_url(&preview_key, expires_in).await.ok();
-        image.original_url = state.s3.generate_presigned_url(&original_key, expires_in).await.ok();
+        image.thumbnail_url = state
+            .s3
+            .generate_presigned_url(&thumbnail_key, expires_in)
+            .await
+            .ok();
+        image.preview_url = state
+            .s3
+            .generate_presigned_url(&preview_key, expires_in)
+            .await
+            .ok();
+        image.original_url = state
+            .s3
+            .generate_presigned_url(&original_key, expires_in)
+            .await
+            .ok();
     }
 
     Ok(Json(manifest))
@@ -140,14 +158,10 @@ pub async fn get_image(
     let s3_key = format!("{album_id}/{path}");
     tracing::debug!("Computed S3 key: {}", s3_key);
 
-    let image_data = state
-        .s3
-        .download_file(&s3_key)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to fetch image {}: {:?}", s3_key, e);
-            StatusCode::NOT_FOUND
-        })?;
+    let image_data = state.s3.download_file(&s3_key).await.map_err(|e| {
+        tracing::error!("Failed to fetch image {}: {:?}", s3_key, e);
+        StatusCode::NOT_FOUND
+    })?;
 
     // Determine content type
     let content_type = if path.ends_with(".jpg") || path.ends_with(".jpeg") {
@@ -158,7 +172,12 @@ pub async fn get_image(
         "application/octet-stream"
     };
 
-    tracing::debug!("Serving image: s3_key={}, content_type={}, size={} bytes", s3_key, content_type, image_data.len());
+    tracing::debug!(
+        "Serving image: s3_key={}, content_type={}, size={} bytes",
+        s3_key,
+        content_type,
+        image_data.len()
+    );
 
     // Check if download is requested
     let is_download = params.get("download").map(|v| v == "true").unwrap_or(false);
@@ -169,7 +188,10 @@ pub async fn get_image(
         Ok((
             [
                 (header::CONTENT_TYPE, content_type),
-                (header::CONTENT_DISPOSITION, &format!("attachment; filename=\"{filename}\"")),
+                (
+                    header::CONTENT_DISPOSITION,
+                    &format!("attachment; filename=\"{filename}\""),
+                ),
             ],
             image_data,
         )
@@ -286,6 +308,7 @@ pub async fn download_album(
 }
 
 fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
+    let album_id_json = serde_json::to_string(album_id).unwrap_or_else(|_| "\"\"".to_string());
     format!(
         r#"<!DOCTYPE html>
 <html lang="en">
@@ -296,6 +319,22 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>{album_name} - Film Gallery</title>
     <style>
+        :root {{
+            --ctrl-bg: rgba(18, 18, 18, 0.72);
+            --ctrl-bg-hover: rgba(18, 18, 18, 0.90);
+            --ctrl-bg-active: rgba(255, 255, 255, 0.12);
+            --ctrl-border: 1px solid rgba(255, 255, 255, 0.12);
+            --ctrl-blur: blur(14px);
+            --ctrl-color: rgba(255, 255, 255, 0.90);
+            --ctrl-color-dim: rgba(255, 255, 255, 0.80);
+            --radius-rect: 10px;
+            --radius-pill: 999px;
+            --ctrl-font: 0.85rem;
+            --ctrl-weight: 500;
+            --ctrl-transition: background 0.15s ease, opacity 0.15s ease;
+            --ctrl-min-h: 44px;
+        }}
+
         * {{
             margin: 0;
             padding: 0;
@@ -335,23 +374,31 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
         }}
 
         .download-all-btn {{
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             margin-top: 12px;
-            padding: 8px 20px;
-            background: #333;
-            color: #fff;
+            padding: 0 20px;
+            height: var(--ctrl-min-h);
+            background: #1a1a1a;
+            color: var(--ctrl-color);
             text-decoration: none;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            letter-spacing: 0.03em;
-            transition: background 0.15s ease;
-            min-height: 44px;
-            line-height: 28px;
+            border-radius: var(--radius-pill);
+            border: none;
+            font-size: var(--ctrl-font);
+            font-weight: var(--ctrl-weight);
+            letter-spacing: 0.02em;
+            transition: var(--ctrl-transition);
+            cursor: pointer;
+            line-height: 1;
         }}
 
         .download-all-btn:hover {{
-            background: #111;
+            background: #000;
+        }}
+
+        .download-all-btn:active {{
+            opacity: 0.8;
         }}
 
         .gallery-container {{
@@ -376,7 +423,8 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
             border-radius: 4px;
             transition: transform 0.2s ease;
             flex: 0 0 auto;
-            max-height: 300px;
+            height: 300px;
+            overflow: hidden;
         }}
 
         .bento-item:hover {{
@@ -386,15 +434,41 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
 
         .bento-item img {{
             display: block;
-            height: 300px;
-            width: auto;
-            object-fit: contain;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
             border-radius: 4px;
             transition: opacity 0.3s ease;
         }}
 
-        .bento-item img.loading {{
-            opacity: 0.7;
+        .thumb-download {{
+            position: absolute;
+            bottom: 7px;
+            right: 7px;
+            width: 28px;
+            height: 28px;
+            padding: 8px;
+            margin: -8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--ctrl-bg);
+            backdrop-filter: var(--ctrl-blur);
+            -webkit-backdrop-filter: var(--ctrl-blur);
+            border: var(--ctrl-border);
+            border-radius: var(--radius-rect);
+            color: var(--ctrl-color);
+            text-decoration: none;
+            z-index: 2;
+            transition: var(--ctrl-transition);
+        }}
+
+        .thumb-download:hover {{
+            background: var(--ctrl-bg-hover);
+        }}
+
+        .thumb-download:active {{
+            background: var(--ctrl-bg-active);
         }}
 
         .thumb-download {{
@@ -459,136 +533,133 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
             -webkit-touch-callout: none;
         }}
 
-        /* Navigation arrows */
-        .nav-btn {{
-            position: fixed;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            width: 60px;
-            height: 60px;
-            cursor: pointer;
-            font-size: 2rem;
-            color: white;
-            border-radius: 50%;
-            z-index: 1001;
-            transition: all 0.2s ease;
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }}
-
-        .nav-btn:hover {{
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-50%) scale(1.1);
-        }}
-
-        .nav-btn:active {{
-            transform: translateY(-50%) scale(0.95);
-        }}
-
-        .nav-btn.prev {{
-            left: 20px;
-        }}
-
-        .nav-btn.next {{
-            right: 20px;
-        }}
-
-        .nav-btn:disabled {{
-            opacity: 0.3;
-            cursor: not-allowed;
-        }}
-
-        .nav-btn:disabled:hover {{
-            transform: translateY(-50%);
-            background: rgba(255, 255, 255, 0.1);
-        }}
-
         /* Top controls */
         .lightbox-controls {{
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: max(16px, env(safe-area-inset-top));
+            right: max(16px, env(safe-area-inset-right));
             display: flex;
-            gap: 10px;
+            gap: 8px;
             z-index: 1001;
-            /* Safe area for notched devices */
-            top: max(20px, env(safe-area-inset-top));
-            right: max(20px, env(safe-area-inset-right));
         }}
 
         .lightbox-btn {{
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            padding: 12px 20px;
+            background: var(--ctrl-bg);
+            border: var(--ctrl-border);
+            padding: 0 18px;
+            height: var(--ctrl-min-h);
             cursor: pointer;
-            font-size: 0.9rem;
-            color: white;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-            backdrop-filter: blur(10px);
-            font-weight: 500;
-            min-height: 44px;
+            font-size: var(--ctrl-font);
+            font-weight: var(--ctrl-weight);
+            color: var(--ctrl-color);
+            border-radius: var(--radius-rect);
+            transition: var(--ctrl-transition);
+            backdrop-filter: var(--ctrl-blur);
+            -webkit-backdrop-filter: var(--ctrl-blur);
+            display: flex;
+            align-items: center;
+            line-height: 1;
         }}
 
         .lightbox-btn:hover {{
-            background: rgba(255, 255, 255, 0.2);
+            background: var(--ctrl-bg-hover);
         }}
 
         .lightbox-btn:active {{
-            transform: scale(0.95);
+            background: var(--ctrl-bg-active);
         }}
 
         .close-btn {{
             position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            width: 44px;
-            height: 44px;
+            top: max(20px, env(safe-area-inset-top));
+            left: max(20px, env(safe-area-inset-left));
+            background: var(--ctrl-bg);
+            border: var(--ctrl-border);
+            width: var(--ctrl-min-h);
+            height: var(--ctrl-min-h);
             cursor: pointer;
-            font-size: 1.5rem;
-            color: white;
-            border-radius: 6px;
+            font-size: 1.25rem;
+            color: var(--ctrl-color);
+            border-radius: var(--radius-rect);
             z-index: 1001;
-            transition: all 0.2s ease;
-            backdrop-filter: blur(10px);
+            transition: var(--ctrl-transition);
+            backdrop-filter: var(--ctrl-blur);
+            -webkit-backdrop-filter: var(--ctrl-blur);
             display: flex;
             align-items: center;
             justify-content: center;
-            /* Safe area for notched devices */
-            top: max(20px, env(safe-area-inset-top));
-            left: max(20px, env(safe-area-inset-left));
+            padding: 0;
+            line-height: 1;
         }}
 
         .close-btn:hover {{
-            background: rgba(255, 255, 255, 0.2);
+            background: var(--ctrl-bg-hover);
         }}
 
         .close-btn:active {{
-            transform: scale(0.95);
+            background: var(--ctrl-bg-active);
         }}
 
-        /* Image counter */
-        .image-counter {{
+        /* Navigation pill */
+        .nav-pill {{
             position: fixed;
-            bottom: 30px;
+            bottom: max(24px, env(safe-area-inset-bottom));
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.1);
-            padding: 8px 20px;
-            border-radius: 20px;
-            color: white;
-            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            background: var(--ctrl-bg);
+            backdrop-filter: var(--ctrl-blur);
+            -webkit-backdrop-filter: var(--ctrl-blur);
+            border: var(--ctrl-border);
+            border-radius: var(--radius-pill);
             z-index: 1001;
-            backdrop-filter: blur(10px);
-            font-weight: 500;
-            /* Safe area for devices with bottom insets */
-            bottom: max(30px, env(safe-area-inset-bottom));
+            overflow: hidden;
+        }}
+
+        .pill-btn {{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: var(--ctrl-min-h);
+            background: transparent;
+            border: none;
+            color: var(--ctrl-color);
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            transition: var(--ctrl-transition);
+            padding: 0;
+        }}
+
+        .pill-btn:hover {{
+            background: rgba(255, 255, 255, 0.10);
+        }}
+
+        .pill-btn:active {{
+            background: var(--ctrl-bg-active);
+        }}
+
+        .pill-btn:disabled {{
+            opacity: 0.28;
+            cursor: not-allowed;
+        }}
+
+        .pill-btn:disabled:hover {{
+            background: transparent;
+        }}
+
+        .pill-counter {{
+            padding: 0 6px;
+            color: var(--ctrl-color-dim);
+            font-size: 0.82rem;
+            font-weight: var(--ctrl-weight);
+            min-width: 56px;
+            text-align: center;
+            white-space: nowrap;
+            letter-spacing: 0.04em;
+            user-select: none;
         }}
 
         @media (max-width: 768px) {{
@@ -602,43 +673,13 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
             }}
 
             .bento-item {{
-                max-height: none;
+                height: auto;
                 width: 100%;
             }}
 
             .bento-item img {{
                 width: 100%;
                 height: auto;
-            }}
-
-            .nav-btn {{
-                width: 44px;
-                height: 44px;
-                font-size: 1.5rem;
-            }}
-
-            .nav-btn.prev {{
-                left: 8px;
-            }}
-
-            .nav-btn.next {{
-                right: 8px;
-            }}
-
-            /* Larger touch targets on mobile */
-            .close-btn {{
-                width: 48px;
-                height: 48px;
-            }}
-
-            .lightbox-btn {{
-                min-height: 48px;
-                padding: 14px 24px;
-            }}
-
-            .image-counter {{
-                font-size: 1rem;
-                padding: 10px 24px;
             }}
         }}
     </style>
@@ -647,7 +688,13 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
     <div class="header">
         <h1>{album_name}</h1>
         <p>{image_count} photographs</p>
-        <a class="download-all-btn" href="/api/album/{album_id}/download" download>&#x2B07; Download all</a>
+        <a class="download-all-btn" href="/api/album/{album_id}/download" download>
+            <svg width="14" height="14" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 1v7M3 5.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M1.5 10.5h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            Download all
+        </a>
     </div>
 
     <div class="gallery-container">
@@ -658,19 +705,21 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
 
     <div class="lightbox" id="lightbox">
         <button class="close-btn" onclick="closeLightbox()">&times;</button>
-        <button class="nav-btn prev" id="prev-btn" onclick="navigateImage(-1)">‹</button>
-        <button class="nav-btn next" id="next-btn" onclick="navigateImage(1)">›</button>
         <div class="lightbox-controls">
             <button class="lightbox-btn" onclick="downloadImage()">Download</button>
         </div>
-        <div class="image-counter" id="image-counter">1 / 1</div>
         <div class="lightbox-content">
             <img class="lightbox-image" id="lightbox-img" src="" alt="">
+        </div>
+        <div class="nav-pill" id="nav-pill">
+            <button class="pill-btn" id="prev-btn" onclick="navigateImage(-1)">&#x2039;</button>
+            <span class="pill-counter" id="image-counter">1 / 1</span>
+            <button class="pill-btn" id="next-btn" onclick="navigateImage(1)">&#x203a;</button>
         </div>
     </div>
 
     <script>
-        const albumId = '{album_id}';
+        const albumId = {album_id_json};
         const images = {images_json};
         let currentImageIndex = 0;
 
@@ -970,12 +1019,12 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
         const downloadAllBtn = document.querySelector('.download-all-btn');
         if (downloadAllBtn) {{
             downloadAllBtn.addEventListener('click', () => {{
-                const original = downloadAllBtn.textContent;
+                const original = downloadAllBtn.innerHTML;
                 downloadAllBtn.textContent = 'Preparing…';
                 downloadAllBtn.style.pointerEvents = 'none';
                 downloadAllBtn.style.opacity = '0.7';
                 setTimeout(() => {{
-                    downloadAllBtn.textContent = original;
+                    downloadAllBtn.innerHTML = original;
                     downloadAllBtn.style.pointerEvents = '';
                     downloadAllBtn.style.opacity = '';
                 }}, 8000);
@@ -986,6 +1035,7 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
 </html>"#,
         album_name = html_escape(&manifest.name),
         album_id = album_id,
+        album_id_json = album_id_json,
         image_count = manifest.images.len(),
         thumbnails = generate_thumbnails_html(album_id, manifest),
         images_json = serde_json::to_string(&manifest.images).unwrap_or_else(|_| "[]".to_string()),
@@ -998,13 +1048,10 @@ fn generate_thumbnails_html(album_id: &str, manifest: &AlbumManifest) -> String 
         .iter()
         .enumerate()
         .map(|(index, image)| {
-            let thumbnail_src = image
-                .thumbnail_url
-                .clone()
-                .unwrap_or_else(|| {
-                    // Fallback to proxy URL if presigned URL not available
-                    format!("/api/album/{}/image/{}", album_id, image.thumbnail_path)
-                });
+            let thumbnail_src = image.thumbnail_url.clone().unwrap_or_else(|| {
+                // Fallback to proxy URL if presigned URL not available
+                format!("/api/album/{}/image/{}", album_id, image.thumbnail_path)
+            });
 
             let download_href = format!(
                 "/api/album/{}/image/{}?download=true",
@@ -1012,12 +1059,17 @@ fn generate_thumbnails_html(album_id: &str, manifest: &AlbumManifest) -> String 
             );
 
             format!(
-                r#"<div class="bento-item" style="aspect-ratio: {width}/{height}" onclick="openLightbox({index})">
+                r#"<div class="bento-item" style="aspect-ratio:{iw}/{ih}" onclick="openLightbox({index})">
                 <img data-index="{index}" src="{thumbnail_src}" alt="{filename}" loading="lazy" style="opacity:0" onload="this.style.opacity='1'">
-                <a class="thumb-download" href="{download_href}" download="{orig_filename}" onclick="event.stopPropagation()" title="Download original">&#x2B07;</a>
+                <a class="thumb-download" href="{download_href}" download="{orig_filename}" onclick="event.stopPropagation()" title="Download original">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 1v7M3 5.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M1.5 10.5h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </a>
             </div>"#,
-                width = image.width,
-                height = image.height,
+                iw = image.width,
+                ih = image.height,
                 index = index,
                 thumbnail_src = html_escape(&thumbnail_src),
                 filename = html_escape(&image.original_filename),
@@ -1088,5 +1140,6 @@ fn generate_404_html() -> String {
         <p><a href="/">Return home</a></p>
     </div>
 </body>
-</html>"#.to_string()
+</html>"#
+        .to_string()
 }
