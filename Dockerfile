@@ -3,12 +3,12 @@
 # ============================================
 
 # Stage 1: Prepare cargo-chef
-FROM rust:1.91-slim as chef
+FROM rust:1.91-slim-bookworm AS chef
 RUN cargo install cargo-chef --locked
 WORKDIR /app
 
 # Stage 2: Generate recipe for dependency caching
-FROM chef as planner
+FROM chef AS planner
 COPY Cargo.toml Cargo.lock ./
 COPY gallery-core ./gallery-core
 COPY gallery-cli ./gallery-cli
@@ -16,7 +16,7 @@ COPY gallery-web ./gallery-web
 RUN cargo chef prepare --recipe-path recipe.json
 
 # Stage 3: Build dependencies (cached layer)
-FROM chef as builder
+FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
 
 # Build dependencies with aggressive optimizations
