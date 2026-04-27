@@ -177,6 +177,106 @@ pub async fn get_image(
     }
 }
 
+/// Download all originals for an album as a ZIP file
+pub async fn download_album(
+    State(state): State<AppState>,
+    Path(album_id): Path<String>,
+) -> Result<Response, StatusCode> {
+    tracing::info!("Download album request: album_id={}", album_id);
+
+    // Download and parse manifest
+    let manifest_key = format!("{album_id}/manifest.json");
+    let manifest_data = state
+        .s3
+        .download_file(&manifest_key)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch manifest for album {}: {:?}", album_id, e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let manifest_json = String::from_utf8(manifest_data).map_err(|e| {
+        tracing::error!("Manifest is not valid UTF-8: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let manifest: AlbumManifest = serde_json::from_str(&manifest_json).map_err(|e| {
+        tracing::error!("Failed to parse manifest JSON: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    // Download all originals in parallel
+    let mut join_set = tokio::task::JoinSet::new();
+    for image in manifest.images.clone() {
+        let s3 = state.s3.clone();
+        let key = format!("{album_id}/{}", image.original_path);
+        join_set.spawn(async move {
+            let data = s3.download_file(&key).await.map_err(|e| {
+                tracing::error!("Failed to download image {}: {:?}", key, e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+            Ok::<(String, Vec<u8>), StatusCode>((image.original_filename, data))
+        });
+    }
+
+    let mut image_files: Vec<(String, Vec<u8>)> = Vec::new();
+    while let Some(result) = join_set.join_next().await {
+        match result {
+            Ok(Ok(pair)) => image_files.push(pair),
+            Ok(Err(status)) => return Err(status),
+            Err(e) => {
+                tracing::error!("Task join error: {:?}", e);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        }
+    }
+
+    // Build ZIP in memory using spawn_blocking (zip crate is sync)
+    let zip_bytes = tokio::task::spawn_blocking(move || -> Result<Vec<u8>, String> {
+        let mut buf = std::io::Cursor::new(Vec::new());
+        {
+            let mut zip = zip::ZipWriter::new(&mut buf);
+            let options = zip::write::SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Deflated);
+            for (filename, data) in image_files {
+                zip.start_file(&filename, options).map_err(|e| e.to_string())?;
+                std::io::Write::write_all(&mut zip, &data).map_err(|e| e.to_string())?;
+            }
+            zip.finish().map_err(|e| e.to_string())?;
+        }
+        Ok(buf.into_inner())
+    })
+    .await
+    .map_err(|e| {
+        tracing::error!("spawn_blocking join error: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?
+    .map_err(|e| {
+        tracing::error!("ZIP building error: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    // Build slug from album name
+    let slug: String = manifest
+        .name
+        .to_lowercase()
+        .replace(' ', "_")
+        .chars()
+        .filter(|c| c.is_alphanumeric() || *c == '_')
+        .collect();
+
+    let content_disposition = format!("attachment; filename=\"{slug}.zip\"");
+
+    Ok((
+        [
+            (header::CONTENT_TYPE, "application/zip".to_string()),
+            (header::CONTENT_DISPOSITION, content_disposition),
+        ],
+        zip_bytes,
+    )
+        .into_response())
+}
+
 fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
     format!(
         r#"<!DOCTYPE html>

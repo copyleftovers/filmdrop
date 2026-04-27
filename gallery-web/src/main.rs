@@ -37,6 +37,7 @@ async fn main() -> Result<()> {
         .route("/gallery/:album_id", get(handlers::gallery))
         .route("/api/album/:album_id/manifest", get(handlers::get_manifest))
         .route("/api/album/:album_id/image/*path", get(handlers::get_image))
+        .route("/api/album/:album_id/download", get(handlers::download_album))
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
         .with_state(state);
