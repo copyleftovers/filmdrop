@@ -4,12 +4,12 @@
 
 # Stage 1: Prepare cargo-chef
 FROM rust:1.88-slim as chef
-RUN cargo install cargo-chef
+RUN cargo install cargo-chef --locked
 WORKDIR /app
 
 # Stage 2: Generate recipe for dependency caching
 FROM chef as planner
-COPY Cargo.toml ./
+COPY Cargo.toml Cargo.lock ./
 COPY gallery-core ./gallery-core
 COPY gallery-cli ./gallery-cli
 COPY gallery-web ./gallery-web
@@ -25,7 +25,7 @@ RUN cargo chef cook --release \
     --bin gallery-web
 
 # Stage 4: Build application
-COPY Cargo.toml ./
+COPY Cargo.toml Cargo.lock ./
 COPY gallery-core ./gallery-core
 COPY gallery-cli ./gallery-cli
 COPY gallery-web ./gallery-web
