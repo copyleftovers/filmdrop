@@ -334,6 +334,26 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
             font-size: 0.9rem;
         }}
 
+        .download-all-btn {{
+            display: inline-block;
+            margin-top: 12px;
+            padding: 8px 20px;
+            background: #333;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.03em;
+            transition: background 0.15s ease;
+            min-height: 44px;
+            line-height: 28px;
+        }}
+
+        .download-all-btn:hover {{
+            background: #111;
+        }}
+
         .gallery-container {{
             max-width: 1400px;
             margin: 0 auto;
@@ -377,6 +397,28 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
             opacity: 0.7;
         }}
 
+        .thumb-download {{
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            background: rgba(0, 0, 0, 0.55);
+            color: white;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            text-decoration: none;
+            z-index: 2;
+            transition: background 0.15s ease;
+        }}
+
+        .thumb-download:hover {{
+            background: rgba(0, 0, 0, 0.8);
+        }}
+
         /* Lightbox */
         .lightbox {{
             display: none;
@@ -413,7 +455,7 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
             object-fit: contain;
             user-select: none;
             transition: opacity 0.2s ease;
-            touch-action: pan-x pan-y;
+            touch-action: none;
             -webkit-touch-callout: none;
         }}
 
@@ -569,9 +611,18 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
                 height: auto;
             }}
 
-            /* Hide navigation arrows on mobile - use swipe instead */
             .nav-btn {{
-                display: none;
+                width: 44px;
+                height: 44px;
+                font-size: 1.5rem;
+            }}
+
+            .nav-btn.prev {{
+                left: 8px;
+            }}
+
+            .nav-btn.next {{
+                right: 8px;
             }}
 
             /* Larger touch targets on mobile */
@@ -596,6 +647,7 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
     <div class="header">
         <h1>{album_name}</h1>
         <p>{image_count} photographs</p>
+        <a class="download-all-btn" href="/api/album/{album_id}/download" download>&#x2B07; Download all</a>
     </div>
 
     <div class="gallery-container">
@@ -649,6 +701,7 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
         }});
 
         function openLightbox(index) {{
+            resetZoom();
             currentImageIndex = index;
             showImage(index);
             document.getElementById('lightbox').classList.add('active');
@@ -802,33 +855,131 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
             if (e.target.id === 'lightbox') closeLightbox();
         }});
 
-        // Mobile swipe navigation
-        let touchStartX = 0;
-        let touchEndX = 0;
+        // Zoom/pan touch handler for mobile lightbox
+        let zoomScale = 1;
+        let zoomTranslateX = 0;
+        let zoomTranslateY = 0;
+        let zoomLastTouchDist = 0;
+        let zoomPanStartX = 0;
+        let zoomPanStartY = 0;
+        let zoomPanActive = false;
+        let zoomLastTapTime = 0;
+
+        function applyZoom() {{
+            const img = document.getElementById('lightbox-img');
+            img.style.transform = `translate(${{zoomTranslateX}}px, ${{zoomTranslateY}}px) scale(${{zoomScale}})`;
+            img.style.transformOrigin = 'center center';
+        }}
+
+        function resetZoom() {{
+            zoomScale = 1;
+            zoomTranslateX = 0;
+            zoomTranslateY = 0;
+            applyZoom();
+        }}
+
+        // Patch navigateImage to reset zoom on navigation
+        const _origNavigateImage = navigateImage;
+        navigateImage = function(direction) {{
+            resetZoom();
+            _origNavigateImage(direction);
+        }};
+
+        // Patch closeLightbox to reset zoom on close
+        const _origCloseLightbox = closeLightbox;
+        closeLightbox = function() {{
+            resetZoom();
+            _origCloseLightbox();
+        }};
+
         const lightboxContent = document.querySelector('.lightbox-content');
 
         lightboxContent.addEventListener('touchstart', (e) => {{
-            touchStartX = e.changedTouches[0].screenX;
-        }}, false);
-
-        lightboxContent.addEventListener('touchend', (e) => {{
-            touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-        }}, false);
-
-        function handleSwipe() {{
-            const swipeThreshold = 50;
-            const diff = touchStartX - touchEndX;
-
-            if (Math.abs(diff) > swipeThreshold) {{
-                if (diff > 0) {{
-                    // Swiped left - next image
-                    navigateImage(1);
+            if (e.touches.length === 2) {{
+                // Pinch start
+                zoomLastTouchDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                zoomPanActive = false;
+                e.preventDefault();
+            }} else if (e.touches.length === 1) {{
+                if (zoomScale > 1) {{
+                    // Pan start
+                    zoomPanStartX = e.touches[0].clientX - zoomTranslateX;
+                    zoomPanStartY = e.touches[0].clientY - zoomTranslateY;
+                    zoomPanActive = true;
+                }}
+                // Double-tap detection
+                const now = Date.now();
+                if (now - zoomLastTapTime < 300) {{
+                    // Double tap: toggle fit <-> 100%
+                    const img = document.getElementById('lightbox-img');
+                    if (zoomScale > 1) {{
+                        resetZoom();
+                    }} else {{
+                        const nativeW = img.naturalWidth;
+                        const containerW = img.clientWidth;
+                        if (nativeW && containerW) {{
+                            zoomScale = Math.min(nativeW / containerW, 4);
+                        }} else {{
+                            zoomScale = 2.5;
+                        }}
+                        applyZoom();
+                    }}
+                    zoomLastTapTime = 0;
                 }} else {{
-                    // Swiped right - previous image
-                    navigateImage(-1);
+                    zoomLastTapTime = now;
                 }}
             }}
+        }}, {{ passive: false }});
+
+        lightboxContent.addEventListener('touchmove', (e) => {{
+            if (e.touches.length === 2) {{
+                // Pinch zoom
+                const dist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                if (zoomLastTouchDist > 0) {{
+                    zoomScale = Math.max(1, Math.min(zoomScale * (dist / zoomLastTouchDist), 4));
+                    if (zoomScale === 1) {{ zoomTranslateX = 0; zoomTranslateY = 0; }}
+                    applyZoom();
+                }}
+                zoomLastTouchDist = dist;
+                e.preventDefault();
+            }} else if (e.touches.length === 1 && zoomPanActive) {{
+                // Pan
+                zoomTranslateX = e.touches[0].clientX - zoomPanStartX;
+                zoomTranslateY = e.touches[0].clientY - zoomPanStartY;
+                applyZoom();
+                e.preventDefault();
+            }}
+        }}, {{ passive: false }});
+
+        lightboxContent.addEventListener('touchend', (e) => {{
+            if (e.touches.length < 2) {{
+                zoomLastTouchDist = 0;
+            }}
+            if (e.touches.length === 0) {{
+                zoomPanActive = false;
+            }}
+        }}, {{ passive: true }});
+
+        // Bulk download loading state
+        const downloadAllBtn = document.querySelector('.download-all-btn');
+        if (downloadAllBtn) {{
+            downloadAllBtn.addEventListener('click', () => {{
+                const original = downloadAllBtn.textContent;
+                downloadAllBtn.textContent = 'Preparing…';
+                downloadAllBtn.style.pointerEvents = 'none';
+                downloadAllBtn.style.opacity = '0.7';
+                setTimeout(() => {{
+                    downloadAllBtn.textContent = original;
+                    downloadAllBtn.style.pointerEvents = '';
+                    downloadAllBtn.style.opacity = '';
+                }}, 8000);
+            }});
         }}
     </script>
 </body>
@@ -851,17 +1002,27 @@ fn generate_thumbnails_html(album_id: &str, manifest: &AlbumManifest) -> String 
                 .thumbnail_url
                 .clone()
                 .unwrap_or_else(|| {
-                    // Fallback to proxigned URL if presigned URL not available
+                    // Fallback to proxy URL if presigned URL not available
                     format!("/api/album/{}/image/{}", album_id, image.thumbnail_path)
                 });
 
+            let download_href = format!(
+                "/api/album/{}/image/{}?download=true",
+                album_id, image.original_path
+            );
+
             format!(
-                r#"<div class="bento-item" onclick="openLightbox({index})">
-                <img data-index="{index}" src="{thumbnail_src}" alt="{filename}" loading="lazy">
+                r#"<div class="bento-item" style="aspect-ratio: {width}/{height}" onclick="openLightbox({index})">
+                <img data-index="{index}" src="{thumbnail_src}" alt="{filename}" loading="lazy" style="opacity:0" onload="this.style.opacity='1'">
+                <a class="thumb-download" href="{download_href}" download="{orig_filename}" onclick="event.stopPropagation()" title="Download original">&#x2B07;</a>
             </div>"#,
+                width = image.width,
+                height = image.height,
                 index = index,
                 thumbnail_src = html_escape(&thumbnail_src),
                 filename = html_escape(&image.original_filename),
+                download_href = html_escape(&download_href),
+                orig_filename = html_escape(&image.original_filename),
             )
         })
         .collect::<Vec<_>>()
