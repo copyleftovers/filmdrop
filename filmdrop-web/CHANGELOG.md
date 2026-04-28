@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4](https://github.com/ryzhakar/gallery-rs/compare/filmdrop-web-v0.1.3...filmdrop-web-v0.1.4) - 2026-04-28
+
+### Fixed
+
+- sanitize ZIP entry filenames to prevent path traversal
+
 ## [0.1.1](https://github.com/ryzhakar/gallery-rs/compare/filmdrop-web-v0.1.0...filmdrop-web-v0.1.1) - 2026-04-28
 
 ### Fixed
