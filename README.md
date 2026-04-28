@@ -1,239 +1,146 @@
-# Filmdrop
+# filmdrop
 
-A minimalist, S3-backed photo gallery system designed for film photographers. Features private link-based access, bento-style layouts, and full-resolution image viewing with grain preservation.
+Ephemeral photo sharing for film photographers -- drop your scans, share a link, let it expire.
 
 ## Features
 
-- **CLI Tool**: Process and upload images with automatic resizing (thumbnails, previews, originals)
-- **Web Gallery**: Beautiful bento-style grid layout with lightbox viewer
-- **S3-Based**: No database required - all data stored in S3-compatible storage
-- **Private Links**: UUID-based album access without authentication overhead
-- **Film-Friendly**: High-quality JPEG encoding to preserve analogue grain
-- **Download Support**: One-click full-resolution downloads
+- CLI upload with automatic three-tier processing (thumbnail 400px, preview 2048px, original)
+- Self-destructing galleries (configurable expiration, default 7 days)
+- Zero-dependency web viewer (server-rendered, no JS build step)
+- Grain-preserving pipeline (originals never re-encoded)
+- Mobile zoom viewer (pinch-to-zoom, double-tap to 100% native resolution)
+- Bulk ZIP download
+- Per-photo download overlays
+- Skeleton loading with aspect-ratio placeholders
+- Deterministic album IDs (re-upload resumes, deduplication by content hash)
+- BYO S3 (AWS, Backblaze B2, MinIO, DigitalOcean Spaces)
 
-## Architecture
-
-```
-┌─────────────┐         ┌──────────────┐         ┌─────────┐
-│   CLI Tool  │────────▶│   S3 Bucket  │◀────────│  Web    │
-│   (Rust)    │ uploads │  (images +   │  reads  │  App    │
-│             │         │   manifests) │         │ (Axum)  │
-└─────────────┘         └──────────────┘         └─────────┘
-```
-
-### S3 Structure
-
-```
-bucket/
-  {album-uuid}/
-    manifest.json
-    thumbnails/
-      {image-id}.jpg  (400px max)
-    previews/
-      {image-id}.jpg  (2048px max)
-    originals/
-      {image-id}.jpg  (full resolution)
-```
-
-## Setup
-
-### Prerequisites
-
-- Rust 1.75+ (install from [rustup.rs](https://rustup.rs))
-- AWS credentials configured (for S3 access)
-- S3-compatible bucket (AWS S3, DigitalOcean Spaces, MinIO, etc.)
-
-### AWS/S3 Configuration
-
-Configure your AWS credentials and region:
+## Quick start
 
 ```bash
-export AWS_ACCESS_KEY_ID="your-access-key"
-export AWS_SECRET_ACCESS_KEY="your-secret-key"
-export AWS_REGION="us-east-1"  # or your region
-export GALLERY_BUCKET="your-bucket-name"
+cargo install --git https://github.com/ryzhakar/filmdrop filmdrop-cli
+cargo install --git https://github.com/ryzhakar/filmdrop filmdrop-web
+
+export GALLERY_BUCKET="my-bucket"
+export AWS_ACCESS_KEY_ID="..."
+export AWS_SECRET_ACCESS_KEY="..."
+export AWS_REGION="us-east-1"
+
+# Upload a gallery
+filmdrop upload --name "Portra 400 / June" /path/to/scans/
+
+# Start the web server
+filmdrop-web
+# -> http://localhost:3000/gallery/<album-id>
 ```
 
-For S3-compatible services (not AWS), also set:
+## CLI usage
 
 ```bash
-export AWS_ENDPOINT_URL="https://your-endpoint.com"
-```
-
-### Build
-
-```bash
-# Build everything
-cargo build --release
-
-# CLI binary will be at: target/release/filmdrop
-# Web binary will be at: target/release/filmdrop-web
-```
-
-## Usage
-
-### CLI Tool
-
-#### Upload an Album
-
-```bash
-# Upload images from a directory
-./target/release/filmdrop upload \
-  --name "Summer 2024" \
-  --bucket "my-gallery-bucket" \
-  /path/to/photos/
+# Upload a directory of JPEGs
+filmdrop upload --name "Album Name" /path/to/photos/
 
 # Upload specific files
-./target/release/filmdrop upload \
-  --name "Best Shots" \
-  --bucket "my-gallery-bucket" \
-  photo1.jpg photo2.jpg photo3.jpg
+filmdrop upload --name "Album Name" scan01.jpg scan02.jpg
+
+# Delete an album
+filmdrop delete ALBUM-ID
 ```
 
-The CLI will:
-1. Process each image (resize, optimize)
-2. Upload thumbnails, previews, and originals to S3
-3. Generate and upload a manifest
-4. Output the album UUID for accessing the gallery
+The CLI processes each image into three tiers (thumbnail, preview, original), uploads everything to S3, and prints the album ID.
 
-#### Delete an Album
+## Web server
 
 ```bash
-./target/release/filmdrop delete \
-  --bucket "my-gallery-bucket" \
-  ALBUM-UUID-HERE
+filmdrop-web
 ```
 
-### Web App
+Listens on `0.0.0.0:3000` by default (override with `PORT`).
 
-#### Running Locally
+### Routes
 
-```bash
-export GALLERY_BUCKET="my-gallery-bucket"
-export PORT=3000  # optional, defaults to 3000
-
-./target/release/filmdrop-web
-```
-
-Visit: `http://localhost:3000/gallery/{album-uuid}`
-
-#### Deploying to Coolify
-
-1. **Create a new service** in Coolify
-2. **Set as Dockerfile-based** deployment
-3. **Add environment variables**:
-   ```
-   GALLERY_BUCKET=your-bucket-name
-   AWS_ACCESS_KEY_ID=your-key
-   AWS_SECRET_ACCESS_KEY=your-secret
-   AWS_REGION=your-region
-   PORT=3000
-   ```
-4. **Create Dockerfile** in the repository:
-   ```dockerfile
-   FROM rust:1.75 as builder
-   WORKDIR /app
-   COPY . .
-   RUN cargo build --release --bin filmdrop-web
-
-   FROM debian:bookworm-slim
-   RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-   COPY --from=builder /app/target/release/filmdrop-web /usr/local/bin/filmdrop-web
-   EXPOSE 3000
-   CMD ["filmdrop-web"]
-   ```
-5. Deploy!
-
-### macOS Shortcut Integration
-
-To create a macOS shortcut for easy uploads:
-
-1. Build and install the CLI:
-   ```bash
-   cargo build --release
-   sudo cp target/release/filmdrop /usr/local/bin/
-   ```
-
-2. Open **Shortcuts.app** on macOS
-
-3. Create a new shortcut with:
-   - **Receive**: Images from Share Sheet
-   - **Run Shell Script**:
-     ```bash
-     export GALLERY_BUCKET="your-bucket-name"
-     export AWS_ACCESS_KEY_ID="your-key"
-     export AWS_SECRET_ACCESS_KEY="your-secret"
-
-     /usr/local/bin/filmdrop upload \
-       --name "$(date +%Y-%m-%d)" \
-       --bucket "$GALLERY_BUCKET" \
-       "$@"
-     ```
-
-4. Now you can share images directly from Photos.app to create galleries!
+| Route | Description |
+|---|---|
+| `GET /` | Landing page |
+| `GET /gallery/:album_id` | Gallery viewer (server-rendered HTML) |
+| `GET /api/album/:album_id/manifest` | Album manifest JSON |
+| `GET /api/album/:album_id/image/*path` | Image proxy (with `Content-Disposition: attachment`) |
+| `GET /api/album/:album_id/download` | Bulk ZIP download of all originals |
 
 ## Configuration
 
-### Environment Variables
-
-#### CLI
-- `GALLERY_BUCKET`: S3 bucket name (required)
-- `AWS_ACCESS_KEY_ID`: AWS access key (required)
-- `AWS_SECRET_ACCESS_KEY`: AWS secret key (required)
-- `AWS_REGION`: AWS region (default: us-east-1)
-- `AWS_ENDPOINT_URL`: Custom S3 endpoint for non-AWS services
-
-#### Web App
-- `GALLERY_BUCKET`: S3 bucket name (required)
-- `AWS_ACCESS_KEY_ID`: AWS access key (required)
-- `AWS_SECRET_ACCESS_KEY`: AWS secret key (required)
-- `AWS_REGION`: AWS region (default: us-east-1)
-- `AWS_ENDPOINT_URL`: Custom S3 endpoint
-- `PORT`: Server port (default: 3000)
-
-### Image Processing Settings
-
-Edit `filmdrop-cli/src/image_processor.rs` to adjust:
-- `THUMBNAIL_SIZE`: Default 400px (for grid)
-- `PREVIEW_SIZE`: Default 2048px (for lightbox initial load)
-- `JPEG_QUALITY`: Default 92 (high quality for film grain)
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `GALLERY_BUCKET` | yes | -- | S3 bucket name |
+| `AWS_ACCESS_KEY_ID` | yes | -- | AWS access key |
+| `AWS_SECRET_ACCESS_KEY` | yes | -- | AWS secret key |
+| `AWS_REGION` | no | `us-east-1` | AWS region |
+| `AWS_ENDPOINT_URL` | no | -- | Custom S3 endpoint (enables path-style addressing) |
+| `PORT` | no | `3000` | Web server port |
 
 ## Development
 
-### Project Structure
-
-```
-filmdrop/
-├── filmdrop-core/      # Shared library (S3, manifests)
-├── filmdrop-cli/       # CLI tool for uploads
-├── filmdrop-web/       # Web server (Axum)
-└── Cargo.toml         # Workspace configuration
-```
-
-### Running Tests
+This project uses [just](https://github.com/casey/just) for development tasks. For standard Rust development, use `cargo` commands directly.
 
 ```bash
-cargo test --workspace
-```
+# Install just (if not already installed)
+cargo install just
 
-### Formatting & Linting
-
-```bash
+# Standard workflow
 cargo fmt --all
 cargo clippy --workspace
+cargo test --workspace
+
+# Just recipes
+just check    # cargo check --workspace
+just fmt      # cargo fmt --all
+just clippy   # cargo clippy --workspace
+just test     # cargo test --workspace
+just build    # cargo build --release
+just run      # run web server (sources .env)
+just install  # cargo install --path filmdrop-cli
 ```
+
+Pre-commit hooks enforce formatting, clippy, and cargo-check via [pre-commit](https://pre-commit.com/).
+
+See `just --list` for all available commands.
+
+## Deployment
+
+### Docker
+
+The included `Dockerfile` uses a multi-stage build with cargo-chef for dependency caching:
+
+1. Dependencies are cached in a separate layer via `cargo-chef`
+2. Release build with LTO, single codegen unit, and symbol stripping
+3. Final image is `gcr.io/distroless/cc-debian12:nonroot` -- minimal and runs as non-root
+
+```bash
+docker build -t filmdrop-web .
+docker run -p 3000:3000 \
+  -e GALLERY_BUCKET=my-bucket \
+  -e AWS_ACCESS_KEY_ID=... \
+  -e AWS_SECRET_ACCESS_KEY=... \
+  -e AWS_REGION=us-east-1 \
+  filmdrop-web
+```
+
+### CI/CD
+
+GitHub Actions runs fmt, clippy, build, and tests on every push and PR. On merge to `main`, [release-plz](https://release-plz.ieni.dev/) creates release PRs, and [cargo-dist](https://opensource.axo.dev/cargo-dist/) builds binaries for macOS (aarch64, x86_64), Linux (aarch64, x86_64), and Windows (x86_64).
+
+## Architecture
+
+Three-crate Cargo workspace. No database -- all state lives in S3.
+
+```
+filmdrop-core/   # Shared library: S3 client wrapper + AlbumManifest types
+filmdrop-cli/    # Binary (filmdrop): image processing + upload
+filmdrop-web/    # Binary (filmdrop-web): Axum web server
+```
+
+The CLI hashes input file paths to produce a deterministic album ID. Re-uploading the same set of files resumes the existing album and skips already-uploaded images. Albums and images have S3 `Expires` metadata set so they self-destruct without any cleanup job.
 
 ## License
 
-MIT License - see LICENSE file
-
-## Contributing
-
-PRs welcome! Please ensure:
-- Code is formatted (`cargo fmt`)
-- No clippy warnings (`cargo clippy`)
-- Tests pass (`cargo test`)
-
----
-
-Built with Rust for film photographers
+MIT
