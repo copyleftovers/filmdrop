@@ -14,7 +14,7 @@ pub struct ProcessedImage {
 const THUMBNAIL_SIZE: u32 = 400;
 const PREVIEW_SIZE: u32 = 2048;
 
-pub fn process_image_from_bytes(original_bytes: &[u8], path: &Path) -> Result<ProcessedImage> {
+pub fn process_image_from_bytes(original_bytes: Vec<u8>, path: &Path) -> Result<ProcessedImage> {
     tracing::info!("Processing image: {}", path.display());
 
     if !is_jpeg_file(path) {
@@ -24,7 +24,7 @@ pub fn process_image_from_bytes(original_bytes: &[u8], path: &Path) -> Result<Pr
         );
     }
 
-    let img = image::load_from_memory(original_bytes)
+    let img = image::load_from_memory(&original_bytes)
         .context(format!("Failed to decode image: {}", path.display()))?;
 
     let (width, height) = img.dimensions();
@@ -33,7 +33,7 @@ pub fn process_image_from_bytes(original_bytes: &[u8], path: &Path) -> Result<Pr
     let thumbnail = create_resized_jpeg(&img, THUMBNAIL_SIZE, 85)?;
 
     Ok(ProcessedImage {
-        original: original_bytes.to_vec(),
+        original: original_bytes,
         preview,
         thumbnail,
         width,

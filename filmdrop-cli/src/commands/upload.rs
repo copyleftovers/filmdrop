@@ -118,7 +118,7 @@ pub async fn execute(
             // Process from the already-read bytes
             pb.set_message(format!("Processing: {filename}"));
             let image_id = Uuid::new_v4().to_string();
-            let processed = process_image_from_bytes(&file_bytes, path)?;
+            let processed = process_image_from_bytes(file_bytes, path)?;
 
             pb.inc(1);
             pb.set_message(format!("Processed: {filename}"));
@@ -270,7 +270,13 @@ fn compute_album_id(image_paths: &[PathBuf]) -> String {
         .iter()
         .map(|p| {
             std::fs::canonicalize(p)
-                .unwrap_or_else(|_| p.clone())
+                .unwrap_or_else(|e| {
+                    tracing::warn!(
+                        "Could not canonicalize {}: {e}, using raw path",
+                        p.display()
+                    );
+                    p.clone()
+                })
                 .to_string_lossy()
                 .to_string()
         })
