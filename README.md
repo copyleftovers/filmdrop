@@ -1,4 +1,4 @@
-# Film Gallery
+# Filmdrop
 
 A minimalist, S3-backed photo gallery system designed for film photographers. Features private link-based access, bento-style layouts, and full-resolution image viewing with grain preservation.
 
@@ -66,8 +66,8 @@ export AWS_ENDPOINT_URL="https://your-endpoint.com"
 # Build everything
 cargo build --release
 
-# CLI binary will be at: target/release/gallery
-# Web binary will be at: target/release/gallery-web
+# CLI binary will be at: target/release/filmdrop
+# Web binary will be at: target/release/filmdrop-web
 ```
 
 ## Usage
@@ -78,13 +78,13 @@ cargo build --release
 
 ```bash
 # Upload images from a directory
-./target/release/gallery upload \
+./target/release/filmdrop upload \
   --name "Summer 2024" \
   --bucket "my-gallery-bucket" \
   /path/to/photos/
 
 # Upload specific files
-./target/release/gallery upload \
+./target/release/filmdrop upload \
   --name "Best Shots" \
   --bucket "my-gallery-bucket" \
   photo1.jpg photo2.jpg photo3.jpg
@@ -99,7 +99,7 @@ The CLI will:
 #### Delete an Album
 
 ```bash
-./target/release/gallery delete \
+./target/release/filmdrop delete \
   --bucket "my-gallery-bucket" \
   ALBUM-UUID-HERE
 ```
@@ -112,7 +112,7 @@ The CLI will:
 export GALLERY_BUCKET="my-gallery-bucket"
 export PORT=3000  # optional, defaults to 3000
 
-./target/release/gallery-web
+./target/release/filmdrop-web
 ```
 
 Visit: `http://localhost:3000/gallery/{album-uuid}`
@@ -134,13 +134,13 @@ Visit: `http://localhost:3000/gallery/{album-uuid}`
    FROM rust:1.75 as builder
    WORKDIR /app
    COPY . .
-   RUN cargo build --release --bin gallery-web
+   RUN cargo build --release --bin filmdrop-web
 
    FROM debian:bookworm-slim
    RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-   COPY --from=builder /app/target/release/gallery-web /usr/local/bin/gallery-web
+   COPY --from=builder /app/target/release/filmdrop-web /usr/local/bin/filmdrop-web
    EXPOSE 3000
-   CMD ["gallery-web"]
+   CMD ["filmdrop-web"]
    ```
 5. Deploy!
 
@@ -151,7 +151,7 @@ To create a macOS shortcut for easy uploads:
 1. Build and install the CLI:
    ```bash
    cargo build --release
-   sudo cp target/release/gallery /usr/local/bin/
+   sudo cp target/release/filmdrop /usr/local/bin/
    ```
 
 2. Open **Shortcuts.app** on macOS
@@ -164,7 +164,7 @@ To create a macOS shortcut for easy uploads:
      export AWS_ACCESS_KEY_ID="your-key"
      export AWS_SECRET_ACCESS_KEY="your-secret"
 
-     /usr/local/bin/gallery upload \
+     /usr/local/bin/filmdrop upload \
        --name "$(date +%Y-%m-%d)" \
        --bucket "$GALLERY_BUCKET" \
        "$@"
@@ -193,7 +193,7 @@ To create a macOS shortcut for easy uploads:
 
 ### Image Processing Settings
 
-Edit `gallery-cli/src/image_processor.rs` to adjust:
+Edit `filmdrop-cli/src/image_processor.rs` to adjust:
 - `THUMBNAIL_SIZE`: Default 400px (for grid)
 - `PREVIEW_SIZE`: Default 2048px (for lightbox initial load)
 - `JPEG_QUALITY`: Default 92 (high quality for film grain)
@@ -203,10 +203,10 @@ Edit `gallery-cli/src/image_processor.rs` to adjust:
 ### Project Structure
 
 ```
-gallery-rs/
-├── gallery-core/      # Shared library (S3, manifests)
-├── gallery-cli/       # CLI tool for uploads
-├── gallery-web/       # Web server (Axum)
+filmdrop/
+├── filmdrop-core/      # Shared library (S3, manifests)
+├── filmdrop-cli/       # CLI tool for uploads
+├── filmdrop-web/       # Web server (Axum)
 └── Cargo.toml         # Workspace configuration
 ```
 
@@ -236,4 +236,4 @@ PRs welcome! Please ensure:
 
 ---
 
-Built with Rust 🦀 for film photographers 📷
+Built with Rust for film photographers

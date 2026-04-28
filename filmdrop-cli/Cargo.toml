@@ -1,5 +1,5 @@
 [package]
-name = "gallery-web"
+name = "filmdrop-cli"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,19 +8,23 @@ repository.workspace = true
 homepage.workspace = true
 
 [[bin]]
-name = "gallery-web"
+name = "filmdrop"
 path = "src/main.rs"
 
 [dependencies]
-gallery-core = { path = "../gallery-core" }
+filmdrop-core = { path = "../filmdrop-core" }
 
-axum.workspace = true
-tower.workspace = true
-tower-http.workspace = true
+anyhow.workspace = true
 tokio.workspace = true
+clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-anyhow.workspace = true
+uuid.workspace = true
+sha2.workspace = true
+image.workspace = true
+walkdir.workspace = true
+rayon.workspace = true
+indicatif.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
-zip = { workspace = true }
+chrono.workspace = true

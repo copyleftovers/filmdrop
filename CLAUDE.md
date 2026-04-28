@@ -12,20 +12,20 @@ cargo build --release
 cargo test --workspace
 
 # Run a single test
-cargo test --package <gallery-core|gallery-cli|gallery-web> <test_name>
+cargo test --package <filmdrop-core|filmdrop-cli|filmdrop-web> <test_name>
 
 # Format and lint
 cargo fmt --all
 cargo clippy --workspace
 
 # Run the web server (requires env vars)
-GALLERY_BUCKET=my-bucket cargo run --bin gallery-web
+GALLERY_BUCKET=my-bucket cargo run --bin filmdrop-web
 
 # Upload images via CLI
-GALLERY_BUCKET=my-bucket cargo run --bin gallery upload --name "Album Name" /path/to/photos/
+GALLERY_BUCKET=my-bucket cargo run --bin filmdrop upload --name "Album Name" /path/to/photos/
 
 # Delete an album
-GALLERY_BUCKET=my-bucket cargo run --bin gallery delete ALBUM-UUID
+GALLERY_BUCKET=my-bucket cargo run --bin filmdrop delete ALBUM-UUID
 ```
 
 Required env vars for all S3 operations: `GALLERY_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`. For non-AWS S3 (MinIO etc.), also set `AWS_ENDPOINT_URL` — the S3 client automatically enables path-style addressing when this is set.
@@ -39,9 +39,9 @@ Required env vars for all S3 operations: `GALLERY_BUCKET`, `AWS_ACCESS_KEY_ID`, 
 Three-crate Cargo workspace with no database: all persistent state lives in S3.
 
 ```
-gallery-core/   # Shared library: S3Client wrapper + AlbumManifest types
-gallery-cli/    # Binary: processes and uploads images; outputs album UUID
-gallery-web/    # Binary: Axum web server; reads S3 and serves HTML
+filmdrop-core/   # Shared library: S3Client wrapper + AlbumManifest types
+filmdrop-cli/    # Binary: processes and uploads images; outputs album UUID
+filmdrop-web/    # Binary: Axum web server; reads S3 and serves HTML
 ```
 
 ### Data flow

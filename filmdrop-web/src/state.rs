@@ -1,5 +1,5 @@
 use anyhow::Result;
-use gallery_core::S3Client;
+use filmdrop_core::S3Client;
 
 #[derive(Clone)]
 pub struct AppState {

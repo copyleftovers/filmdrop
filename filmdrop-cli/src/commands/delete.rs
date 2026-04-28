@@ -1,5 +1,5 @@
 use anyhow::Result;
-use gallery_core::S3Client;
+use filmdrop_core::S3Client;
 
 pub async fn execute(album_id: String, bucket: String) -> Result<()> {
     tracing::info!("Deleting album: {}", album_id);

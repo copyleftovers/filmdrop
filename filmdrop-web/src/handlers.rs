@@ -4,7 +4,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
     Json,
 };
-use gallery_core::AlbumManifest;
+use filmdrop_core::AlbumManifest;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 
@@ -19,7 +19,7 @@ pub async fn index() -> Html<&'static str> {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Film Gallery</title>
+    <title>Filmdrop</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -40,7 +40,7 @@ pub async fn index() -> Html<&'static str> {
     </style>
 </head>
 <body>
-    <h1>Film Gallery</h1>
+    <h1>Filmdrop</h1>
     <p>Access your private gallery using the link provided.</p>
 </body>
 </html>
@@ -317,7 +317,7 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>{album_name} - Film Gallery</title>
+    <title>{album_name} - Filmdrop</title>
     <style>
         :root {{
             --ctrl-bg: rgba(18, 18, 18, 0.72);
@@ -1085,7 +1085,7 @@ fn generate_404_html() -> String {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gallery Not Found</title>
+    <title>Not Found</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;

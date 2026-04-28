@@ -6,8 +6,8 @@ use clap::{Parser, Subcommand};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Parser)]
-#[command(name = "gallery")]
-#[command(about = "Film gallery CLI tool for S3-based photo management", long_about = None)]
+#[command(name = "filmdrop")]
+#[command(about = "Filmdrop CLI tool for S3-based photo management", long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -51,7 +51,7 @@ async fn main() -> Result<()> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "gallery_cli=info".into()),
+                .unwrap_or_else(|_| "filmdrop_cli=info".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();

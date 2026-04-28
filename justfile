@@ -1,4 +1,4 @@
-# gallery-rs development commands
+# filmdrop development commands
 # Run `just` or `just --list` to see all available commands
 
 # Default recipe - show available commands
@@ -34,12 +34,12 @@ run:
         source .env
         set +a
     fi
-    cargo run --bin gallery-web
+    cargo run --bin filmdrop-web
 
 # Upload images via CLI (usage: just upload "Album Name" /path/to/photos/)
 upload NAME PATH:
-    cargo run --bin gallery upload --name "{{NAME}}" {{PATH}}
+    cargo run --bin filmdrop upload --name "{{NAME}}" {{PATH}}
 
 # Install the CLI tool
 install:
-    cargo install --path gallery-cli
+    cargo install --path filmdrop-cli

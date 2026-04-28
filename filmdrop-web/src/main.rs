@@ -18,7 +18,7 @@ async fn main() -> Result<()> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "gallery_web=info,gallery_core=debug,tower_http=debug".into()),
+                .unwrap_or_else(|_| "filmdrop_web=info,filmdrop_core=debug,tower_http=debug".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
@@ -46,7 +46,7 @@ async fn main() -> Result<()> {
     let addr = format!("0.0.0.0:{port}");
     let listener = tokio::net::TcpListener::bind(&addr).await?;
 
-    tracing::info!("Gallery web server listening on {}", addr);
+    tracing::info!("Filmdrop web server listening on {}", addr);
 
     axum::serve(listener, app).await?;
 

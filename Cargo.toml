@@ -1,15 +1,15 @@
 [workspace]
-members = ["gallery-core", "gallery-cli", "gallery-web"]
+members = ["filmdrop-core", "filmdrop-cli", "filmdrop-web"]
 resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-authors = ["Gallery RS"]
+authors = ["Filmdrop"]
 description = "S3-backed photo gallery for film photographers"
-repository = "https://github.com/ryzhakar/gallery-rs"
-homepage = "https://github.com/ryzhakar/gallery-rs"
+repository = "https://github.com/ryzhakar/filmdrop"
+homepage = "https://github.com/ryzhakar/filmdrop"
 
 [workspace.dependencies]
 # S3 client

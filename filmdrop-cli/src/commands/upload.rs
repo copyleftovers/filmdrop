@@ -1,5 +1,5 @@
 use anyhow::Result;
-use gallery_core::{AlbumManifest, ImageInfo, S3Client, DateTime};
+use filmdrop_core::{AlbumManifest, ImageInfo, S3Client, DateTime};
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use sha2::{Sha256, Digest};
@@ -205,7 +205,7 @@ pub async fn execute(paths: Vec<String>, name: String, bucket: String, expires_i
     println!("✓ Album complete!");
     println!("Album ID: {album_id}");
     println!("Total images: {}", manifest.images.len());
-    println!("\nAccess your gallery at: https://your-domain.com/gallery/{album_id}");
+    println!("\nAccess your album at: https://your-domain.com/gallery/{album_id}");
 
     Ok(())
 }
