@@ -123,28 +123,38 @@ impl S3Client {
 
     /// Delete all objects with a prefix (album deletion)
     pub async fn delete_prefix(&self, prefix: &str) -> Result<()> {
-        // List all objects with the prefix
-        let objects = self
-            .client
-            .list_objects_v2()
-            .bucket(&self.bucket)
-            .prefix(prefix)
-            .send()
-            .await
-            .context("Failed to list objects")?;
+        let mut continuation_token: Option<String> = None;
 
-        // Delete each object
-        if let Some(contents) = objects.contents {
-            for object in contents {
-                if let Some(key) = object.key {
-                    self.client
-                        .delete_object()
-                        .bucket(&self.bucket)
-                        .key(&key)
-                        .send()
-                        .await
-                        .context(format!("Failed to delete {key}"))?;
+        loop {
+            let mut request = self
+                .client
+                .list_objects_v2()
+                .bucket(&self.bucket)
+                .prefix(prefix);
+
+            if let Some(token) = &continuation_token {
+                request = request.continuation_token(token);
+            }
+
+            let response = request.send().await.context("Failed to list objects")?;
+
+            if let Some(contents) = response.contents {
+                for object in contents {
+                    if let Some(key) = object.key {
+                        self.client
+                            .delete_object()
+                            .bucket(&self.bucket)
+                            .key(&key)
+                            .send()
+                            .await
+                            .context(format!("Failed to delete {key}"))?;
+                    }
                 }
+            }
+
+            match response.next_continuation_token {
+                Some(token) => continuation_token = Some(token),
+                None => break,
             }
         }
 
