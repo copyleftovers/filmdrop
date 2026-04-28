@@ -5,7 +5,7 @@ repos:
           - id: fmt
           - id: cargo-check
           - id: clippy
-            args: [--fix, --allow-staged, --workspace]
+            args: [--fix, --allow-staged, --allow-dirty, --workspace]
     - repo: https://github.com/pre-commit/pre-commit-hooks
       rev: v4.6.0
       hooks:
