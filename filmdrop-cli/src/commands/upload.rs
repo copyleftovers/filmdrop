@@ -28,11 +28,11 @@ pub async fn execute(
     let s3 = S3Client::new(bucket).await?;
 
     // Calculate expiration times
-    // Images expire at N days + 1 hour
-    let image_expires =
+    // Images expire at exactly N days
+    let image_expires = to_aws_datetime(Utc::now() + Duration::days(expires_in_days as i64));
+    // Manifest expires at N days + 1 hour (must outlive images)
+    let manifest_expires =
         to_aws_datetime(Utc::now() + Duration::days(expires_in_days as i64) + Duration::hours(1));
-    // Manifest expires at exactly N days
-    let manifest_expires = to_aws_datetime(Utc::now() + Duration::days(expires_in_days as i64));
 
     // Collect all image paths
     let image_paths = collect_image_paths(paths)?;
