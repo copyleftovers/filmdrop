@@ -205,7 +205,7 @@ pub async fn execute(
     let mut manifest = AlbumManifest::with_id(name, album_id.clone());
 
     // Add all images to manifest
-    for image in reused_images.into_iter().chain(uploaded_images.into_iter()) {
+    for image in reused_images.into_iter().chain(uploaded_images) {
         manifest.add_image(image);
     }
 
