@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3](https://github.com/ryzhakar/gallery-rs/compare/filmdrop-core-v0.1.2...filmdrop-core-v0.1.3) - 2026-04-28
+
+### Fixed
+
+- propagate non-404 errors in S3Client::object_exists
+
 ## [0.1.0](https://github.com/ryzhakar/gallery-rs/releases/tag/filmdrop-core-v0.1.0) - 2026-04-28
 
 ### Other
