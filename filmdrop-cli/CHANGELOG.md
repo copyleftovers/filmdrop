@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/ryzhakar/gallery-rs/compare/filmdrop-cli-v0.1.6...filmdrop-cli-v0.2.0) - 2026-04-28
+
+### Fixed
+
+- CLI robustness — canonicalize paths, bound upload concurrency, read files once, remove dead param
+- avoid unnecessary copy in process_image_from_bytes and warn on canonicalization fallback
+- apply 4 targeted fixes to CLI upload pipeline
+
 ## [0.1.2](https://github.com/ryzhakar/gallery-rs/compare/filmdrop-cli-v0.1.1...filmdrop-cli-v0.1.2) - 2026-04-28
 
 ### Fixed
