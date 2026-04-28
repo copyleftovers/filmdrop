@@ -1382,7 +1382,7 @@ dependencies = [
 
 [[package]]
 name = "filmdrop-cli"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1403,7 +1403,7 @@ dependencies = [
 
 [[package]]
 name = "filmdrop-core"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "anyhow",
  "aws-config",
@@ -1420,7 +1420,7 @@ dependencies = [
 
 [[package]]
 name = "filmdrop-web"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "anyhow",
  "axum",
