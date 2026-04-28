@@ -49,8 +49,16 @@ pub async fn index() -> Html<&'static str> {
 }
 
 /// Gallery page
-pub async fn gallery(State(state): State<AppState>, Path(album_id): Path<String>) -> Html<String> {
+pub async fn gallery(State(state): State<AppState>, Path(album_id): Path<String>) -> Response {
     tracing::info!("Gallery page request: album_id={}", album_id);
+
+    if album_id.contains("..") || album_id.contains('/') || album_id.contains('\\') {
+        return (
+            StatusCode::BAD_REQUEST,
+            Html("Invalid album ID".to_string()),
+        )
+            .into_response();
+    }
 
     // Verify album exists by checking manifest
     let manifest_key = format!("{album_id}/manifest.json");
@@ -58,22 +66,22 @@ pub async fn gallery(State(state): State<AppState>, Path(album_id): Path<String>
         Ok(data) => data,
         Err(e) => {
             tracing::error!("Failed to fetch manifest for album {}: {:?}", album_id, e);
-            return Html(generate_404_html());
+            return (StatusCode::NOT_FOUND, Html(generate_404_html())).into_response();
         }
     };
 
     let manifest_json = match String::from_utf8(manifest_data) {
         Ok(json) => json,
-        Err(_) => return Html(generate_404_html()),
+        Err(_) => return (StatusCode::NOT_FOUND, Html(generate_404_html())).into_response(),
     };
 
     let mut manifest: AlbumManifest = match serde_json::from_str(&manifest_json) {
         Ok(m) => m,
-        Err(_) => return Html(generate_404_html()),
+        Err(_) => return (StatusCode::NOT_FOUND, Html(generate_404_html())).into_response(),
     };
 
     // Generate presigned URLs for direct S3 access (valid for 7 days to match object expiration)
-    let expires_in = std::time::Duration::from_secs(7 * 24 * 3600);
+    let expires_in = std::time::Duration::from_secs(7 * 24 * 3600 - 60);
     for image in &mut manifest.images {
         let thumbnail_key = format!("{album_id}/{}", image.thumbnail_path);
         let preview_key = format!("{album_id}/{}", image.preview_path);
@@ -99,7 +107,7 @@ pub async fn gallery(State(state): State<AppState>, Path(album_id): Path<String>
     // Generate HTML
     let html = generate_gallery_html(&album_id, &manifest);
 
-    Html(html)
+    Html(html).into_response()
 }
 
 /// Get album manifest JSON
@@ -121,7 +129,7 @@ pub async fn get_manifest(
         serde_json::from_str(&manifest_json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     // Generate presigned URLs for all images (valid for 7 days to match object expiration)
-    let expires_in = std::time::Duration::from_secs(7 * 24 * 3600);
+    let expires_in = std::time::Duration::from_secs(7 * 24 * 3600 - 60);
     for image in &mut manifest.images {
         let thumbnail_key = format!("{album_id}/{}", image.thumbnail_path);
         let preview_key = format!("{album_id}/{}", image.preview_path);
@@ -153,6 +161,10 @@ pub async fn get_image(
     Path((album_id, path)): Path<(String, String)>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<Response, StatusCode> {
+    if album_id.contains("..") || path.contains("..") {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
     tracing::info!("Image request: album_id={}, path={}", album_id, path);
 
     let s3_key = format!("{album_id}/{path}");
@@ -212,6 +224,10 @@ pub async fn download_album(
     State(state): State<AppState>,
     Path(album_id): Path<String>,
 ) -> Result<Response, StatusCode> {
+    if album_id.contains("..") {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
     tracing::info!("Download album request: album_id={}", album_id);
 
     // Download and parse manifest
@@ -254,7 +270,8 @@ pub async fn download_album(
                 .split(['/', '\\'])
                 .next_back()
                 .unwrap_or("image.jpg");
-            let entry_name = format!("{}_{}", &image.id[..8], base_filename);
+            let id_prefix = &image.id[..image.id.len().min(8)];
+            let entry_name = format!("{}_{}", id_prefix, base_filename);
             Ok::<(String, Vec<u8>), StatusCode>((entry_name, data))
         });
     }
@@ -323,7 +340,11 @@ pub async fn download_album(
 }
 
 fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
+    let album_id_html = html_escape(album_id);
     let album_id_json = serde_json::to_string(album_id).unwrap_or_else(|_| "\"\"".to_string());
+    let images_json = serde_json::to_string(&manifest.images)
+        .unwrap_or_else(|_| "[]".to_string())
+        .replace("</", "<\\/");
     format!(
         r#"<!DOCTYPE html>
 <html lang="en">
@@ -1039,11 +1060,11 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
 </body>
 </html>"#,
         album_name = html_escape(&manifest.name),
-        album_id = album_id,
+        album_id = album_id_html,
         album_id_json = album_id_json,
         image_count = manifest.images.len(),
         thumbnails = generate_thumbnails_html(album_id, manifest),
-        images_json = serde_json::to_string(&manifest.images).unwrap_or_else(|_| "[]".to_string()),
+        images_json = images_json,
     )
 }
 
