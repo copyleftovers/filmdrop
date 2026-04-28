@@ -7,6 +7,9 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 authors = ["Gallery RS"]
+description = "S3-backed photo gallery for film photographers"
+repository = "https://github.com/ryzhakar/gallery-rs"
+homepage = "https://github.com/ryzhakar/gallery-rs"
 
 [workspace.dependencies]
 # S3 client
@@ -59,3 +62,8 @@ indicatif = { version = "0.17", features = ["rayon"] }
 walkdir = "2.5"
 chrono = "0.4"
 zip = "2"
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
