@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6](https://github.com/ryzhakar/gallery-rs/compare/filmdrop-web-v0.1.5...filmdrop-web-v0.1.6) - 2026-04-28
+
+### Fixed
+
+- apply 6 targeted security and correctness fixes to handlers.rs
+
 ## [0.1.4](https://github.com/ryzhakar/gallery-rs/compare/filmdrop-web-v0.1.3...filmdrop-web-v0.1.4) - 2026-04-28
 
 ### Fixed
