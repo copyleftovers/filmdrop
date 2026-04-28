@@ -188,7 +188,19 @@ impl S3Client {
             .await
         {
             Ok(_) => Ok(true),
-            Err(_) => Ok(false),
+            Err(sdk_err) => {
+                let is_not_found = sdk_err
+                    .as_service_error()
+                    .map(|e| e.is_not_found())
+                    .unwrap_or(false);
+                if is_not_found {
+                    Ok(false)
+                } else {
+                    Err(anyhow::anyhow!(
+                        "Failed to check if object exists: {sdk_err}"
+                    ))
+                }
+            }
         }
     }
 
