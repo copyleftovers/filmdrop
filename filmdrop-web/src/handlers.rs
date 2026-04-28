@@ -249,7 +249,12 @@ pub async fn download_album(
                 tracing::error!("Failed to download image {}: {:?}", key, e);
                 StatusCode::INTERNAL_SERVER_ERROR
             })?;
-            let entry_name = format!("{}_{}", &image.id[..8], image.original_filename);
+            let base_filename = image
+                .original_filename
+                .split(['/', '\\'])
+                .next_back()
+                .unwrap_or("image.jpg");
+            let entry_name = format!("{}_{}", &image.id[..8], base_filename);
             Ok::<(String, Vec<u8>), StatusCode>((entry_name, data))
         });
     }
