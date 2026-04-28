@@ -27,14 +27,13 @@ pub fn process_image(path: &Path) -> Result<ProcessedImage> {
     }
 
     // Load the image to get dimensions and create variants
-    let img = image::open(path)
-        .context(format!("Failed to open image: {}", path.display()))?;
+    let img = image::open(path).context(format!("Failed to open image: {}", path.display()))?;
 
     let (width, height) = img.dimensions();
 
     // Read original file as-is (no re-encoding to preserve quality)
-    let original = fs::read(path)
-        .context(format!("Failed to read original file: {}", path.display()))?;
+    let original =
+        fs::read(path).context(format!("Failed to read original file: {}", path.display()))?;
 
     // Create preview (2048px max dimension) - for lightbox initial load
     let preview = create_resized_jpeg(&img, PREVIEW_SIZE, 90)?;

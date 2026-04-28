@@ -2,10 +2,7 @@ mod handlers;
 mod state;
 
 use anyhow::Result;
-use axum::{
-    routing::get,
-    Router,
-};
+use axum::{routing::get, Router};
 use std::env;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -17,15 +14,16 @@ async fn main() -> Result<()> {
     // Initialize tracing
     tracing_subscriber::registry()
         .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "filmdrop_web=info,filmdrop_core=debug,tower_http=debug".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                "filmdrop_web=info,filmdrop_core=debug,tower_http=debug".into()
+            }),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
 
     // Get configuration from environment
-    let bucket = env::var("GALLERY_BUCKET")
-        .expect("GALLERY_BUCKET environment variable must be set");
+    let bucket =
+        env::var("GALLERY_BUCKET").expect("GALLERY_BUCKET environment variable must be set");
     let port = env::var("PORT").unwrap_or_else(|_| "3000".to_string());
 
     // Create app state
@@ -37,7 +35,10 @@ async fn main() -> Result<()> {
         .route("/gallery/:album_id", get(handlers::gallery))
         .route("/api/album/:album_id/manifest", get(handlers::get_manifest))
         .route("/api/album/:album_id/image/*path", get(handlers::get_image))
-        .route("/api/album/:album_id/download", get(handlers::download_album))
+        .route(
+            "/api/album/:album_id/download",
+            get(handlers::download_album),
+        )
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
         .with_state(state);

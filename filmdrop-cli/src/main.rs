@@ -59,7 +59,12 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Upload { paths, name, bucket, expires_in_days } => {
+        Commands::Upload {
+            paths,
+            name,
+            bucket,
+            expires_in_days,
+        } => {
             commands::upload::execute(paths, name, bucket, expires_in_days).await?;
         }
         Commands::Delete { album_id, bucket } => {

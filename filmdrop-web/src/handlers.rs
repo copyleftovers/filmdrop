@@ -210,14 +210,10 @@ pub async fn download_album(
 
     // Download and parse manifest
     let manifest_key = format!("{album_id}/manifest.json");
-    let manifest_data = state
-        .s3
-        .download_file(&manifest_key)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to fetch manifest for album {}: {:?}", album_id, e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let manifest_data = state.s3.download_file(&manifest_key).await.map_err(|e| {
+        tracing::error!("Failed to fetch manifest for album {}: {:?}", album_id, e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     let manifest_json = String::from_utf8(manifest_data).map_err(|e| {
         tracing::error!("Manifest is not valid UTF-8: {:?}", e);
@@ -239,7 +235,10 @@ pub async fn download_album(
         let key = format!("{album_id}/{}", image.original_path);
         let semaphore = semaphore.clone();
         join_set.spawn(async move {
-            let _permit = semaphore.acquire_owned().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            let _permit = semaphore
+                .acquire_owned()
+                .await
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
             let data = s3.download_file(&key).await.map_err(|e| {
                 tracing::error!("Failed to download image {}: {:?}", key, e);
                 StatusCode::INTERNAL_SERVER_ERROR
@@ -269,7 +268,8 @@ pub async fn download_album(
             let options = zip::write::SimpleFileOptions::default()
                 .compression_method(zip::CompressionMethod::Deflated);
             for (filename, data) in image_files {
-                zip.start_file(&filename, options).map_err(|e| e.to_string())?;
+                zip.start_file(&filename, options)
+                    .map_err(|e| e.to_string())?;
                 std::io::Write::write_all(&mut zip, &data).map_err(|e| e.to_string())?;
             }
             zip.finish().map_err(|e| e.to_string())?;
@@ -293,7 +293,11 @@ pub async fn download_album(
         .chars()
         .filter(|c| c.is_alphanumeric() || *c == '_')
         .collect();
-    let slug = if slug.is_empty() { "album".to_string() } else { slug };
+    let slug = if slug.is_empty() {
+        "album".to_string()
+    } else {
+        slug
+    };
 
     let content_disposition = format!("attachment; filename=\"{slug}.zip\"");
 

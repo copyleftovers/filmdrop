@@ -1,15 +1,15 @@
 use anyhow::Result;
-use filmdrop_core::{AlbumManifest, ImageInfo, S3Client, DateTime};
+use chrono::{Duration, Utc};
+use filmdrop_core::{AlbumManifest, DateTime, ImageInfo, S3Client};
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use uuid::Uuid;
 use walkdir::WalkDir;
-use chrono::{Duration, Utc};
 
 use crate::image_processor::{is_image_file, process_image, ProcessedImage};
 
@@ -18,13 +18,19 @@ fn to_aws_datetime(dt: chrono::DateTime<Utc>) -> DateTime {
     DateTime::from_secs(dt.timestamp())
 }
 
-pub async fn execute(paths: Vec<String>, name: String, bucket: String, expires_in_days: u32) -> Result<()> {
+pub async fn execute(
+    paths: Vec<String>,
+    name: String,
+    bucket: String,
+    expires_in_days: u32,
+) -> Result<()> {
     // Initialize S3 client
     let s3 = S3Client::new(bucket).await?;
 
     // Calculate expiration times
     // Images expire at N days + 1 hour
-    let image_expires = to_aws_datetime(Utc::now() + Duration::days(expires_in_days as i64) + Duration::hours(1));
+    let image_expires =
+        to_aws_datetime(Utc::now() + Duration::days(expires_in_days as i64) + Duration::hours(1));
     // Manifest expires at exactly N days
     let manifest_expires = to_aws_datetime(Utc::now() + Duration::days(expires_in_days as i64));
 
@@ -167,9 +173,16 @@ pub async fn execute(paths: Vec<String>, name: String, bucket: String, expires_i
 
             // Spawn concurrent upload task
             let task = tokio::spawn(async move {
-                let result =
-                    upload_image_to_s3(s3_clone, album_id_clone, image_id, filename.clone(), file_hash, processed, image_expires_clone)
-                        .await;
+                let result = upload_image_to_s3(
+                    s3_clone,
+                    album_id_clone,
+                    image_id,
+                    filename.clone(),
+                    file_hash,
+                    processed,
+                    image_expires_clone,
+                )
+                .await;
                 pb_clone.inc(1);
                 pb_clone.set_message(format!("Uploaded: {filename}"));
                 result
@@ -199,8 +212,12 @@ pub async fn execute(paths: Vec<String>, name: String, bucket: String, expires_i
     // Upload manifest
     let manifest_json = manifest.to_json()?;
     let manifest_key = format!("{album_id}/manifest.json");
-    s3.upload_bytes(manifest_json.into_bytes(), &manifest_key, Some(manifest_expires))
-        .await?;
+    s3.upload_bytes(
+        manifest_json.into_bytes(),
+        &manifest_key,
+        Some(manifest_expires),
+    )
+    .await?;
 
     println!("✓ Album complete!");
     println!("Album ID: {album_id}");
@@ -221,15 +238,18 @@ async fn upload_image_to_s3(
 ) -> Result<ImageInfo> {
     // Upload original
     let original_key = format!("{album_id}/originals/{image_id}.jpg");
-    s3.upload_bytes(processed.original, &original_key, Some(expires)).await?;
+    s3.upload_bytes(processed.original, &original_key, Some(expires))
+        .await?;
 
     // Upload preview
     let preview_key = format!("{album_id}/previews/{image_id}.jpg");
-    s3.upload_bytes(processed.preview, &preview_key, Some(expires)).await?;
+    s3.upload_bytes(processed.preview, &preview_key, Some(expires))
+        .await?;
 
     // Upload thumbnail
     let thumbnail_key = format!("{album_id}/thumbnails/{image_id}.jpg");
-    s3.upload_bytes(processed.thumbnail, &thumbnail_key, Some(expires)).await?;
+    s3.upload_bytes(processed.thumbnail, &thumbnail_key, Some(expires))
+        .await?;
 
     Ok(ImageInfo::new(
         filename,

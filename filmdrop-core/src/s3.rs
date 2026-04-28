@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use aws_sdk_s3::{
-    primitives::{ByteStream, DateTime},
     presigning::PresigningConfig,
+    primitives::{ByteStream, DateTime},
     Client,
 };
 use std::path::Path;
@@ -38,7 +38,12 @@ impl S3Client {
 
     /// Upload a file to S3
     pub async fn upload_file(&self, local_path: &Path, s3_key: &str) -> Result<()> {
-        tracing::debug!("S3 PUT: bucket={}, key={}, local_path={:?}", self.bucket, s3_key, local_path);
+        tracing::debug!(
+            "S3 PUT: bucket={}, key={}, local_path={:?}",
+            self.bucket,
+            s3_key,
+            local_path
+        );
 
         let body = ByteStream::from_path(local_path)
             .await
@@ -59,12 +64,23 @@ impl S3Client {
     }
 
     /// Upload bytes to S3
-    pub async fn upload_bytes(&self, data: Vec<u8>, s3_key: &str, expires: Option<DateTime>) -> Result<()> {
-        tracing::debug!("S3 PUT (bytes): bucket={}, key={}, size={} bytes", self.bucket, s3_key, data.len());
+    pub async fn upload_bytes(
+        &self,
+        data: Vec<u8>,
+        s3_key: &str,
+        expires: Option<DateTime>,
+    ) -> Result<()> {
+        tracing::debug!(
+            "S3 PUT (bytes): bucket={}, key={}, size={} bytes",
+            self.bucket,
+            s3_key,
+            data.len()
+        );
 
         let body = ByteStream::from(data);
 
-        let mut request = self.client
+        let mut request = self
+            .client
             .put_object()
             .bucket(&self.bucket)
             .key(s3_key)
@@ -75,10 +91,7 @@ impl S3Client {
             request = request.expires(expires_at);
         }
 
-        request
-            .send()
-            .await
-            .context("Failed to upload to S3")?;
+        request.send().await.context("Failed to upload to S3")?;
 
         tracing::debug!("S3 PUT (bytes) success: key={}", s3_key);
         Ok(())
@@ -88,7 +101,8 @@ impl S3Client {
     pub async fn download_file(&self, s3_key: &str) -> Result<Vec<u8>> {
         tracing::debug!("S3 GET: bucket={}, key={}", self.bucket, s3_key);
 
-        let response = self.client
+        let response = self
+            .client
             .get_object()
             .bucket(&self.bucket)
             .key(s3_key)
@@ -110,7 +124,8 @@ impl S3Client {
     /// Delete all objects with a prefix (album deletion)
     pub async fn delete_prefix(&self, prefix: &str) -> Result<()> {
         // List all objects with the prefix
-        let objects = self.client
+        let objects = self
+            .client
             .list_objects_v2()
             .bucket(&self.bucket)
             .prefix(prefix)
@@ -138,18 +153,20 @@ impl S3Client {
 
     /// Get public URL for an object (if bucket is public)
     pub fn get_public_url(&self, s3_key: &str) -> String {
-        format!(
-            "https://{}.s3.amazonaws.com/{}",
-            self.bucket, s3_key
-        )
+        format!("https://{}.s3.amazonaws.com/{}", self.bucket, s3_key)
     }
 
     /// Generate a presigned URL for an object (valid for specified duration)
-    pub async fn generate_presigned_url(&self, s3_key: &str, expires_in: Duration) -> Result<String> {
+    pub async fn generate_presigned_url(
+        &self,
+        s3_key: &str,
+        expires_in: Duration,
+    ) -> Result<String> {
         let presigning_config = PresigningConfig::expires_in(expires_in)
             .context("Failed to create presigning config")?;
 
-        let presigned_request = self.client
+        let presigned_request = self
+            .client
             .get_object()
             .bucket(&self.bucket)
             .key(s3_key)
@@ -162,7 +179,8 @@ impl S3Client {
 
     /// Check if object exists
     pub async fn object_exists(&self, s3_key: &str) -> Result<bool> {
-        match self.client
+        match self
+            .client
             .head_object()
             .bucket(&self.bucket)
             .key(s3_key)
