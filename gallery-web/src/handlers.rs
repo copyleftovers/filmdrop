@@ -446,12 +446,12 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
 
         .thumb-download {{
             position: absolute;
-            bottom: 7px;
-            right: 7px;
-            width: 28px;
-            height: 28px;
-            padding: 8px;
-            margin: -8px;
+            bottom: 10px;
+            right: 10px;
+            width: 36px;
+            height: 36px;
+            padding: 4px;
+            margin: -4px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -464,6 +464,7 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
             text-decoration: none;
             z-index: 2;
             transition: var(--ctrl-transition);
+            opacity: 0;
         }}
 
         .thumb-download:hover {{
@@ -472,6 +473,10 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
 
         .thumb-download:active {{
             background: var(--ctrl-bg-active);
+        }}
+
+        .bento-item:hover .thumb-download {{
+            opacity: 1;
         }}
 
         /* Lightbox */
@@ -661,6 +666,10 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
             .bento-item img {{
                 width: 100%;
                 height: auto;
+            }}
+
+            .thumb-download {{
+                opacity: 1;
             }}
         }}
     </style>
@@ -1043,7 +1052,7 @@ fn generate_thumbnails_html(album_id: &str, manifest: &AlbumManifest) -> String 
                 r#"<div class="bento-item" style="aspect-ratio:{iw}/{ih}" onclick="openLightbox({index})">
                 <img data-index="{index}" src="{thumbnail_src}" alt="{filename}" loading="lazy" style="opacity:0" onload="this.style.opacity='1'">
                 <a class="thumb-download" href="{download_href}" download="{orig_filename}" onclick="event.stopPropagation()" title="Download original">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="14" height="14" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M6 1v7M3 5.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M1.5 10.5h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                     </svg>
