@@ -381,11 +381,13 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
             margin-top: 12px;
             padding: 0 20px;
             height: var(--ctrl-min-h);
-            background: #1a1a1a;
+            background: var(--ctrl-bg);
+            backdrop-filter: var(--ctrl-blur);
+            -webkit-backdrop-filter: var(--ctrl-blur);
             color: var(--ctrl-color);
             text-decoration: none;
             border-radius: var(--radius-pill);
-            border: none;
+            border: var(--ctrl-border);
             font-size: var(--ctrl-font);
             font-weight: var(--ctrl-weight);
             letter-spacing: 0.02em;
@@ -395,11 +397,11 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
         }}
 
         .download-all-btn:hover {{
-            background: #000;
+            background: var(--ctrl-bg-hover);
         }}
 
         .download-all-btn:active {{
-            opacity: 0.8;
+            background: var(--ctrl-bg-active);
         }}
 
         .gallery-container {{
@@ -515,8 +517,8 @@ fn generate_gallery_html(album_id: &str, manifest: &AlbumManifest) -> String {
         /* Top controls */
         .lightbox-controls {{
             position: fixed;
-            top: max(16px, env(safe-area-inset-top));
-            right: max(16px, env(safe-area-inset-right));
+            top: max(20px, env(safe-area-inset-top));
+            right: max(20px, env(safe-area-inset-right));
             display: flex;
             gap: 8px;
             z-index: 1001;
