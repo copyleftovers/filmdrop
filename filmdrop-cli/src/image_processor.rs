@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use image::{imageops::FilterType, DynamicImage, GenericImageView, ImageFormat};
+use image::{imageops::FilterType, DynamicImage, GenericImageView};
 use std::fs;
 use std::io::Cursor;
 use std::path::Path;
@@ -63,14 +63,11 @@ fn create_resized_jpeg(img: &DynamicImage, max_size: u32, quality: u8) -> Result
     encode_jpeg(&resized, quality)
 }
 
-fn encode_jpeg(img: &DynamicImage, _quality: u8) -> Result<Vec<u8>> {
+fn encode_jpeg(img: &DynamicImage, quality: u8) -> Result<Vec<u8>> {
     let mut buffer = Cursor::new(Vec::new());
-
-    img.write_to(&mut buffer, ImageFormat::Jpeg)
+    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut buffer, quality)
+        .encode_image(img)
         .context("Failed to encode JPEG")?;
-
-    // TODO: Use quality parameter with a JPEG encoder that supports it
-    // For now, using standard image crate encoding with default quality
     Ok(buffer.into_inner())
 }
 
