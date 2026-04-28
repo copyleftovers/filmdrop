@@ -183,8 +183,14 @@ pub async fn get_image(
     let is_download = params.get("download").map(|v| v == "true").unwrap_or(false);
 
     if is_download {
-        // Extract filename from path
-        let filename = path.split('/').next_back().unwrap_or("image.jpg");
+        // Extract and sanitize filename from path
+        let filename: String = path
+            .split('/')
+            .next_back()
+            .unwrap_or("image.jpg")
+            .chars()
+            .filter(|c| *c != '"' && *c != '\r' && *c != '\n' && *c != '\\')
+            .collect();
         Ok((
             [
                 (header::CONTENT_TYPE, content_type),
