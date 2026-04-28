@@ -1,0 +1,3 @@
+[workspace]
+# Disable GitHub releases - cargo-dist handles that
+git_release_enable = false

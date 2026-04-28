@@ -1,0 +1,34 @@
+---
+name: Publish
+
+on:
+    pull_request:
+        types: [closed]
+        branches:
+            - main
+
+jobs:
+    publish-and-tag:
+        name: Publish to crates.io
+        runs-on: ubuntu-latest
+        # Only run when a PR is actually merged (not just closed)
+        if: |
+            github.event.pull_request.merged == true &&
+            github.repository_owner == 'ryzhakar'
+        permissions:
+            contents: write
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  persist-credentials: false
+            - name: Install Rust toolchain
+              uses: dtolnay/rust-toolchain@stable
+            - name: Publish crate and create tag
+              uses: release-plz/action@v0.5
+              with:
+                  command: release
+              env:
+                  GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+                  CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
