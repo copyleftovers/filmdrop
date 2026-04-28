@@ -1,6 +1,5 @@
 use anyhow::{Context, Result};
 use image::{imageops::FilterType, DynamicImage, GenericImageView};
-use std::fs;
 use std::io::Cursor;
 use std::path::Path;
 
@@ -15,10 +14,9 @@ pub struct ProcessedImage {
 const THUMBNAIL_SIZE: u32 = 400;
 const PREVIEW_SIZE: u32 = 2048;
 
-pub fn process_image(path: &Path) -> Result<ProcessedImage> {
+pub fn process_image_from_bytes(original_bytes: Vec<u8>, path: &Path) -> Result<ProcessedImage> {
     tracing::info!("Processing image: {}", path.display());
 
-    // Verify file is JPEG
     if !is_jpeg_file(path) {
         anyhow::bail!(
             "Only JPEG files (.jpg, .jpeg) are supported. Got: {}",
@@ -26,23 +24,16 @@ pub fn process_image(path: &Path) -> Result<ProcessedImage> {
         );
     }
 
-    // Load the image to get dimensions and create variants
-    let img = image::open(path).context(format!("Failed to open image: {}", path.display()))?;
+    let img = image::load_from_memory(&original_bytes)
+        .context(format!("Failed to decode image: {}", path.display()))?;
 
     let (width, height) = img.dimensions();
 
-    // Read original file as-is (no re-encoding to preserve quality)
-    let original =
-        fs::read(path).context(format!("Failed to read original file: {}", path.display()))?;
-
-    // Create preview (2048px max dimension) - for lightbox initial load
     let preview = create_resized_jpeg(&img, PREVIEW_SIZE, 90)?;
-
-    // Create thumbnail (400px max dimension) - for grid
     let thumbnail = create_resized_jpeg(&img, THUMBNAIL_SIZE, 85)?;
 
     Ok(ProcessedImage {
-        original,
+        original: original_bytes,
         preview,
         thumbnail,
         width,

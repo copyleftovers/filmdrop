@@ -5,13 +5,12 @@ use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use uuid::Uuid;
 use walkdir::WalkDir;
 
-use crate::image_processor::{is_image_file, process_image, ProcessedImage};
+use crate::image_processor::{is_image_file, process_image_from_bytes, ProcessedImage};
 
 /// Convert chrono DateTime to AWS SDK DateTime
 fn to_aws_datetime(dt: chrono::DateTime<Utc>) -> DateTime {
@@ -102,11 +101,12 @@ pub async fn execute(
                 .to_string_lossy()
                 .to_string();
 
-            // Show we're starting this file
-            pb.set_message(format!("Hashing: {filename}"));
+            // Read file once
+            let file_bytes = std::fs::read(path)?;
 
-            // Hash the file content
-            let file_hash = hash_file(path)?;
+            // Hash from the already-read bytes
+            pb.set_message(format!("Hashing: {filename}"));
+            let file_hash = hash_bytes(&file_bytes);
 
             // Check if this image already exists in the album
             if let Some(existing_info) = existing_images.get(&file_hash) {
@@ -115,10 +115,10 @@ pub async fn execute(
                 return Ok::<_, anyhow::Error>(ProcessResult::Existing(existing_info.clone()));
             }
 
-            // Process the image (new or changed)
+            // Process from the already-read bytes
             pb.set_message(format!("Processing: {filename}"));
             let image_id = Uuid::new_v4().to_string();
-            let processed = process_image(path)?;
+            let processed = process_image_from_bytes(file_bytes, path)?;
 
             pb.inc(1);
             pb.set_message(format!("Processed: {filename}"));
@@ -164,15 +164,18 @@ pub async fn execute(
         upload_pb.set_message("Uploading to S3...");
 
         let mut upload_tasks = Vec::new();
+        let upload_semaphore = Arc::new(tokio::sync::Semaphore::new(8));
 
         for (image_id, filename, file_hash, processed) in new_images {
             let s3_clone = s3.clone();
             let album_id_clone = album_id.clone();
             let pb_clone = upload_pb.clone();
             let image_expires_clone = image_expires;
+            let sem_clone = upload_semaphore.clone();
 
-            // Spawn concurrent upload task
+            // Spawn concurrent upload task with semaphore limit
             let task = tokio::spawn(async move {
+                let _permit = sem_clone.acquire().await.expect("semaphore closed");
                 let result = upload_image_to_s3(
                     s3_clone,
                     album_id_clone,
@@ -256,7 +259,6 @@ async fn upload_image_to_s3(
         processed.width,
         processed.height,
         file_hash,
-        &album_id,
         &image_id,
     ))
 }
@@ -264,26 +266,36 @@ async fn upload_image_to_s3(
 /// Compute a deterministic album ID from the set of image paths
 fn compute_album_id(image_paths: &[PathBuf]) -> String {
     let mut hasher = Sha256::new();
-
-    // Hash the sorted list of image paths (canonicalized representations)
-    // This ensures the same set of images always produces the same ID
-    for path in image_paths {
-        // Use the path as a string for hashing
-        hasher.update(path.to_string_lossy().as_bytes());
-        hasher.update(b"\n"); // Separator
+    let mut canonical_paths: Vec<String> = image_paths
+        .iter()
+        .map(|p| {
+            std::fs::canonicalize(p)
+                .unwrap_or_else(|e| {
+                    tracing::warn!(
+                        "Could not canonicalize {}: {e}, using raw path",
+                        p.display()
+                    );
+                    p.clone()
+                })
+                .to_string_lossy()
+                .to_string()
+        })
+        .collect();
+    canonical_paths.sort();
+    for path in &canonical_paths {
+        hasher.update(path.as_bytes());
+        hasher.update(b"\n");
     }
-
     let result = hasher.finalize();
-    format!("{result:x}")[..16].to_string() // Use first 16 chars
+    format!("{result:x}")[..16].to_string()
 }
 
-/// Hash a file's content
-fn hash_file(path: &Path) -> Result<String> {
-    let file_content = fs::read(path)?;
+/// Hash raw bytes with SHA256
+fn hash_bytes(data: &[u8]) -> String {
     let mut hasher = Sha256::new();
-    hasher.update(&file_content);
+    hasher.update(data);
     let result = hasher.finalize();
-    Ok(format!("{result:x}"))
+    format!("{result:x}")
 }
 
 fn collect_image_paths(paths: Vec<String>) -> Result<Vec<PathBuf>> {

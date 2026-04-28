@@ -65,7 +65,6 @@ impl ImageInfo {
         width: u32,
         height: u32,
         file_hash: String,
-        _album_id: &str,
         image_id: &str,
     ) -> Self {
         Self {
