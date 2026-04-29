@@ -25,3 +25,4 @@ test-images/
 *.png
 !example.jpg
 orchestration_log/recon/
+orchestration_log/history/*/cost.md
