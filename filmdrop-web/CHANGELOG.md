@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/copyleftovers/filmdrop/compare/filmdrop-web-v0.2.0...filmdrop-web-v0.2.1) - 2026-04-29
+
+### Fixed
+
+- return 404 instead of 500 for corrupt manifests in download_album
+
+### Other
+
+- update packaging metadata and URLs for copyleftovers org transfer
+
 ## [0.1.6](https://github.com/ryzhakar/gallery-rs/compare/filmdrop-web-v0.1.5...filmdrop-web-v0.1.6) - 2026-04-28
 
 ### Fixed
