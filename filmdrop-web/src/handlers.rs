@@ -234,17 +234,17 @@ pub async fn download_album(
     let manifest_key = format!("{album_id}/manifest.json");
     let manifest_data = state.s3.download_file(&manifest_key).await.map_err(|e| {
         tracing::error!("Failed to fetch manifest for album {}: {:?}", album_id, e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        StatusCode::NOT_FOUND
     })?;
 
     let manifest_json = String::from_utf8(manifest_data).map_err(|e| {
         tracing::error!("Manifest is not valid UTF-8: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        StatusCode::NOT_FOUND
     })?;
 
     let manifest: AlbumManifest = serde_json::from_str(&manifest_json).map_err(|e| {
         tracing::error!("Failed to parse manifest JSON: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        StatusCode::NOT_FOUND
     })?;
 
     let album_name = manifest.name.clone();
