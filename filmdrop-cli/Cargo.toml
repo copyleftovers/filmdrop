@@ -16,6 +16,11 @@ exclude = ["Dockerfile", "docker-compose.yml", "justfile", ".github/"]
 name = "filmdrop"
 path = "src/main.rs"
 
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/{ name }-v{ version }/{ name }-{ target }.tar.xz"
+bin-dir = "{ name }-{ target }/{ bin }{ binary-ext }"
+pkg-fmt = "txz"
+
 [dependencies]
 filmdrop-core = { path = "../filmdrop-core", version = "0.2.1" }
 
