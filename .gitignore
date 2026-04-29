@@ -24,3 +24,4 @@ test-images/
 *.jpeg
 *.png
 !example.jpg
+orchestration_log/recon/

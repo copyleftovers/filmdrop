@@ -42,7 +42,13 @@ Required env vars for all S3 operations: `GALLERY_BUCKET`, `AWS_ACCESS_KEY_ID`, 
 
 ## Active Specs
 
-- `docs/spec-mobile-ui.md` -- Mobile UI improvements: zoom viewer, skeleton loading, download discoverability, bulk ZIP download
+None. The mobile UI spec from session 2026-04-29 was implemented and is no longer tracked.
+
+## Session Records
+
+- `orchestration_log/reference/codebase_state.md` -- current project state
+- `orchestration_log/reference/conventions.md` -- how to work in this repo
+- `orchestration_log/reference/deferred_items.md` -- backlog
 
 ## Architecture
 
