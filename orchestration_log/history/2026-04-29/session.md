@@ -4,7 +4,7 @@
 **Session ID:** 7774590f-ec08-4e02-ad10-69a3ed6209a5
 **Branch:** main
 **Duration:** 2 days, 1 hour, 24 minutes (2026-04-27T17:24Z – 2026-04-29T18:49Z)
-**Cost:** [PLACEHOLDER - run /cost to fill]
+**Cost:** see local `cost.md` (gitignored; per-session)
 **Code changes:** ~+2500 -1800 (rough estimate from rename + features)
 **Outcome:** Took filmdrop from working prototype to fully published workspace under
 copyleftovers org. 9 release cycles spanning v0.1.0–v0.2.2. Cross-platform binaries
