@@ -17,7 +17,7 @@ name = "filmdrop-web"
 path = "src/main.rs"
 
 [dependencies]
-filmdrop-core = { path = "../filmdrop-core", version = "0.2.0" }
+filmdrop-core = { path = "../filmdrop-core", version = "0.2.1" }
 
 axum.workspace = true
 tower.workspace = true

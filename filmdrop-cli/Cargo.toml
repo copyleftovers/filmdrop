@@ -17,7 +17,7 @@ name = "filmdrop"
 path = "src/main.rs"
 
 [dependencies]
-filmdrop-core = { path = "../filmdrop-core", version = "0.2.0" }
+filmdrop-core = { path = "../filmdrop-core", version = "0.2.1" }
 
 anyhow.workspace = true
 tokio.workspace = true
