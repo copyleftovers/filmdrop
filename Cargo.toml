@@ -8,8 +8,12 @@ edition = "2021"
 license = "MIT"
 authors = ["Filmdrop"]
 description = "S3-backed photo gallery for film photographers"
-repository = "https://github.com/ryzhakar/filmdrop"
-homepage = "https://github.com/ryzhakar/filmdrop"
+repository = "https://github.com/copyleftovers/filmdrop"
+homepage = "https://github.com/copyleftovers/filmdrop"
+keywords = ["gallery", "photography", "s3", "photos"]
+categories = ["multimedia::images", "command-line-utilities"]
+rust-version = "1.91"
+readme = "README.md"
 
 [workspace.dependencies]
 # S3 client

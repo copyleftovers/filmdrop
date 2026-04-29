@@ -41,7 +41,7 @@ jobs:
         if: |
             github.event_name == 'push' &&
             github.ref == 'refs/heads/main' &&
-            github.repository_owner == 'ryzhakar'
+            github.repository_owner == 'copyleftovers'
         permissions:
             pull-requests: write
             contents: write

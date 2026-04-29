@@ -18,8 +18,8 @@ Ephemeral photo sharing for film photographers -- drop your scans, share a link,
 ## Quick start
 
 ```bash
-cargo install --git https://github.com/ryzhakar/filmdrop filmdrop-cli
-cargo install --git https://github.com/ryzhakar/filmdrop filmdrop-web
+cargo install --git https://github.com/copyleftovers/filmdrop filmdrop-cli
+cargo install --git https://github.com/copyleftovers/filmdrop filmdrop-web
 
 export GALLERY_BUCKET="my-bucket"
 export AWS_ACCESS_KEY_ID="..."
