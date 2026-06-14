@@ -15,10 +15,13 @@ RUN if [ "${FILMDROP_WEB_VERSION}" = "latest" ]; then \
         /root/.cargo/bin/cargo-binstall "filmdrop-web@${FILMDROP_WEB_VERSION}" --no-confirm --install-path /usr/local/bin; \
     fi
 
-FROM gcr.io/distroless/cc-debian12:nonroot
+FROM debian:bookworm-slim
 
-COPY --from=installer /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+RUN groupadd -r filmdrop && useradd -r -g filmdrop filmdrop
+
 COPY --from=installer /usr/local/bin/filmdrop-web /usr/local/bin/filmdrop-web
+
+USER filmdrop
 
 EXPOSE 3000
 
