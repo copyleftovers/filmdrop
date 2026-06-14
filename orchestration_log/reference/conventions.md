@@ -1,6 +1,6 @@
 # Conventions — filmdrop
 
-Last updated: 2026-04-29
+Last updated: 2026-06-14
 
 Patterns derived from this project's session history. Many entries document traps that have already been triggered; read them before starting a new session.
 
@@ -140,6 +140,39 @@ pkg-fmt = "txz"
 ```
 
 Without this block, `cargo binstall filmdrop-cli` fails with a 404. Do not remove or rename these keys. If the cargo-dist asset naming changes (e.g., upgrading cargo-dist), update `pkg-url` and `bin-dir` to match.
+
+---
+
+## Docker image — cargo-binstall workflow
+
+The Dockerfile uses cargo-binstall to download prebuilt filmdrop-web binaries from GitHub Releases. It does NOT compile from source.
+
+**Build:**
+```bash
+docker build -t filmdrop-web .                                    # latest version
+docker build --build-arg FILMDROP_WEB_VERSION=0.2.3 -t filmdrop-web .  # pinned version
+```
+
+**Key constraints:**
+- Runtime base is `debian:bookworm-slim` (not distroless) — prebuilt binaries have dynamic deps (liblzma etc.) that distroless lacks
+- `ca-certificates` must be installed in the runtime stage — the binary makes TLS calls to S3
+- cargo-binstall installs to `/root/.cargo/bin`, which is not on PATH — use the full path in RUN commands
+- `FILMDROP_WEB_VERSION` defaults to `latest`; cargo-binstall resolves it from crates.io metadata
+- The binstall metadata in Cargo.toml must match cargo-dist's asset naming (`{name}-{target}.tar.xz`, `.zip` for Windows)
+
+**Failure history:** distroless/cc-debian12 caused liblzma.so.5 missing; nim65s/cargo-binstall image was 1.8 GB (too heavy for remote); PATH not set after bootstrap install.
+
+---
+
+## Secrets handling — .env file
+
+The `.env` file at repo root contains S3 credentials. When passing env vars to Docker or subprocesses, source opaquely and forward by name:
+
+```bash
+set -a && source .env && set +a && docker run -e GALLERY_BUCKET -e AWS_ACCESS_KEY_ID ...
+```
+
+Never read, cat, or log the .env file contents. Treat as secret from all agents including the orchestrator.
 
 ---
 
