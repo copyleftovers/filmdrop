@@ -16,6 +16,15 @@ exclude = ["Dockerfile", "docker-compose.yml", "justfile", ".github/"]
 name = "filmdrop-web"
 path = "src/main.rs"
 
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/{ name }-v{ version }/{ name }-{ target }.tar.xz"
+bin-dir = "{ name }-{ target }/{ bin }{ binary-ext }"
+pkg-fmt = "txz"
+
+[package.metadata.binstall.overrides.x86_64-pc-windows-msvc]
+pkg-url = "{ repo }/releases/download/{ name }-v{ version }/{ name }-{ target }.zip"
+pkg-fmt = "zip"
+
 [dependencies]
 filmdrop-core = { path = "../filmdrop-core", version = "0.2.2" }
 
