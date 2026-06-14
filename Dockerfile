@@ -9,7 +9,7 @@ RUN apt-get update \
 RUN curl -L --proto '=https' --tlsv1.2 -sSf \
     https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
 
-RUN cargo-binstall "filmdrop-web@${FILMDROP_WEB_VERSION}" --no-confirm --install-path /usr/local/bin
+RUN /root/.cargo/bin/cargo-binstall "filmdrop-web@${FILMDROP_WEB_VERSION}" --no-confirm --install-path /usr/local/bin
 
 FROM gcr.io/distroless/cc-debian12:nonroot
 
