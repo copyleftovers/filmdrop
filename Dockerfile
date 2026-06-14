@@ -17,7 +17,10 @@ RUN if [ "${FILMDROP_WEB_VERSION}" = "latest" ]; then \
 
 FROM debian:bookworm-slim
 
-RUN groupadd -r filmdrop && useradd -r -g filmdrop filmdrop
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r filmdrop && useradd -r -g filmdrop filmdrop
 
 COPY --from=installer /usr/local/bin/filmdrop-web /usr/local/bin/filmdrop-web
 
