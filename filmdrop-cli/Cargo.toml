@@ -26,7 +26,7 @@ pkg-url = "{ repo }/releases/download/{ name }-v{ version }/{ name }-{ target }.
 pkg-fmt = "zip"
 
 [dependencies]
-filmdrop-core = { path = "../filmdrop-core", version = "0.2.2" }
+filmdrop-core = { path = "../filmdrop-core", version = "0.2.3" }
 
 anyhow.workspace = true
 tokio.workspace = true
