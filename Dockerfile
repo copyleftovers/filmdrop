@@ -1,6 +1,6 @@
 FROM debian:bookworm-slim AS installer
 
-ARG FILMDROP_WEB_VERSION
+ARG FILMDROP_WEB_VERSION=latest
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl ca-certificates \
@@ -9,7 +9,11 @@ RUN apt-get update \
 RUN curl -L --proto '=https' --tlsv1.2 -sSf \
     https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
 
-RUN /root/.cargo/bin/cargo-binstall "filmdrop-web@${FILMDROP_WEB_VERSION}" --no-confirm --install-path /usr/local/bin
+RUN if [ "${FILMDROP_WEB_VERSION}" = "latest" ]; then \
+        /root/.cargo/bin/cargo-binstall filmdrop-web --no-confirm --install-path /usr/local/bin; \
+    else \
+        /root/.cargo/bin/cargo-binstall "filmdrop-web@${FILMDROP_WEB_VERSION}" --no-confirm --install-path /usr/local/bin; \
+    fi
 
 FROM gcr.io/distroless/cc-debian12:nonroot
 
